@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Hamrohim</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -65,6 +66,33 @@
   }
   .title { font-size: 20px; font-weight: 700; }
   .subtitle { font-size: 12.5px; color: rgba(242,237,228,0.55); }
+  #headerRight { margin-left: auto; position: relative; }
+  #accountBtn {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, #6b7cff, #4a5bcc);
+    border: none; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer;
+  }
+  #accountMenu {
+    display: none;
+    position: absolute; top: 46px; right: 0; width: 230px;
+    background: #171d33; border: 1px solid rgba(242,237,228,0.15);
+    border-radius: 14px; padding: 12px; z-index: 30;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  #accountMenu.show { display: block; }
+  #accountMenu .email { font-size: 12.5px; color: rgba(242,237,228,0.6); word-break: break-all; margin-bottom: 8px; }
+  #accountMenu .planline { font-size: 13.5px; margin-bottom: 4px; font-weight: 700; }
+  #accountMenu .usageline { font-size: 12px; color: rgba(242,237,228,0.55); margin-bottom: 10px; }
+  #upgradeBtn {
+    width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #fff;
+    background: transparent; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer;
+    margin-bottom: 8px;
+  }
+  #logoutBtn {
+    width: 100%; padding: 9px; border-radius: 10px; border: none;
+    background: rgba(242,237,228,0.08); color: #f2ede4; font-size: 13.5px; cursor: pointer;
+  }
+
   #messages {
     flex: 1; overflow-y: auto; padding: 24px 16px;
     display: flex; flex-direction: column; gap: 14px;
@@ -102,6 +130,63 @@
   }
   button.send:disabled { background: rgba(224,164,88,0.3); cursor: default; }
 
+  /* AUTH MODAL */
+  #authModal {
+    position: fixed; inset: 0; background: #0d1321;
+    display: flex; align-items: center; justify-content: center; z-index: 100;
+    padding: 20px;
+  }
+  #authModal.hidden { display: none; }
+  .authBox {
+    width: 100%; max-width: 360px; background: #171d33;
+    border-radius: 18px; padding: 28px 24px; text-align: center;
+  }
+  .authBox h2 { margin: 0 0 6px; font-size: 22px; }
+  .authBox p { margin: 0 0 20px; font-size: 13px; color: rgba(242,237,228,0.55); }
+  .authBox input {
+    width: 100%; padding: 12px 14px; margin-bottom: 10px;
+    background: rgba(242,237,228,0.06); border: 1px solid rgba(242,237,228,0.18);
+    border-radius: 12px; color: #f2ede4; font-size: 15px; outline: none;
+  }
+  .authBox button.primary {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #e0a458, #c97b3c);
+    color: #1a1206; font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 6px;
+  }
+  .authBox .switch { margin-top: 14px; font-size: 13px; color: rgba(242,237,228,0.6); }
+  .authBox .switch a { color: #e0a458; cursor: pointer; text-decoration: underline; }
+  .authBox .errMsg { color: #ff8080; font-size: 13px; margin-top: 8px; min-height: 16px; }
+
+  /* TARIFF MODAL */
+  #tariffModal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+    padding: 16px; overflow-y: auto;
+  }
+  #tariffModal.show { display: flex; }
+  .tariffBox {
+    width: 100%; max-width: 420px; background: #171d33;
+    border-radius: 18px; padding: 24px; position: relative;
+  }
+  .tariffBox h2 { margin: 0 0 4px; font-size: 20px; }
+  .tariffBox .closeBtn {
+    position: absolute; top: 16px; right: 16px; background: none; border: none;
+    color: #f2ede4; font-size: 20px; cursor: pointer;
+  }
+  .planCard {
+    border: 1px solid rgba(242,237,228,0.15); border-radius: 14px;
+    padding: 14px 16px; margin-top: 14px;
+  }
+  .planCard.highlight { border-color: #e0a458; background: rgba(224,164,88,0.08); }
+  .planCard .planName { font-weight: 700; font-size: 16px; margin-bottom: 2px; }
+  .planCard .planPrice { font-size: 13.5px; color: #e0a458; margin-bottom: 6px; }
+  .planCard .planLimits { font-size: 12.5px; color: rgba(242,237,228,0.6); }
+  .payInfo {
+    margin-top: 18px; padding: 14px; background: rgba(242,237,228,0.06);
+    border-radius: 12px; font-size: 13px; line-height: 1.6;
+  }
+  .payInfo b { color: #e0a458; }
+
   @media (min-width: 641px) {
     #sidebar { position: relative; }
     #overlay { display: none !important; }
@@ -109,6 +194,56 @@
 </style>
 </head>
 <body>
+
+<div id="authModal">
+  <div class="authBox">
+    <div class="logo" style="margin: 0 auto 14px;">🤝</div>
+    <h2 id="authTitle">Kirish</h2>
+    <p>Hamrohim bilan suhbatni davom ettirish uchun tizimga kiring</p>
+    <input type="email" id="authEmail" placeholder="Email" />
+    <input type="password" id="authPassword" placeholder="Parol" />
+    <button class="primary" id="authSubmitBtn">Kirish</button>
+    <div class="errMsg" id="authError"></div>
+    <div class="switch">
+      <span id="switchText">Hisobingiz yo'qmi?</span>
+      <a id="switchLink">Ro'yxatdan o'tish</a>
+    </div>
+  </div>
+</div>
+
+<div id="tariffModal">
+  <div class="tariffBox">
+    <button class="closeBtn" id="closeTariffBtn">✕</button>
+    <h2>Tariflar</h2>
+    <p style="font-size:13px; color:rgba(242,237,228,0.55); margin:4px 0 0;">O'zingizga mos tarifni tanlang</p>
+
+    <div class="planCard">
+      <div class="planName">🆓 Bepul</div>
+      <div class="planPrice">0 so'm</div>
+      <div class="planLimits">25 ta xabar/kun · 7 ta rasm/kun</div>
+    </div>
+
+    <div class="planCard highlight">
+      <div class="planName">💎 Premium</div>
+      <div class="planPrice">300 000 so'm / oy (~$25)</div>
+      <div class="planLimits">150 ta xabar/kun · 20 ta rasm/kun</div>
+    </div>
+
+    <div class="planCard highlight">
+      <div class="planName">👑 VIP</div>
+      <div class="planPrice">500 000 so'm / oy (~$42)</div>
+      <div class="planLimits">1000 ta xabar/kun · 100 ta rasm/kun</div>
+    </div>
+
+    <div class="payInfo">
+      To'lov qilish uchun quyidagi kartaga o'tkazma qiling:<br>
+      💳 <b>4067 0700 0924 7748</b><br>
+      👤 Dilnozaxon YULDASHEVA<br><br>
+      To'lovni amalga oshirgach, chekni va emailingizni <b>@bilolxon_201409</b> ga Telegram orqali yuboring — tarifingiz tez orada faollashtiriladi.
+    </div>
+  </div>
+</div>
+
 <div id="app">
   <div id="overlay"></div>
   <div id="sidebar" class="hidden">
@@ -123,6 +258,16 @@
         <div class="title">Hamrohim</div>
         <div class="subtitle">doim yoningda</div>
       </div>
+      <div id="headerRight">
+        <button id="accountBtn">?</button>
+        <div id="accountMenu">
+          <div class="email" id="menuEmail"></div>
+          <div class="planline" id="menuPlan"></div>
+          <div class="usageline" id="menuUsage"></div>
+          <button id="upgradeBtn">Upgrade</button>
+          <button id="logoutBtn">Chiqish</button>
+        </div>
+      </div>
     </header>
     <div id="messages"></div>
     <div id="inputbar">
@@ -133,6 +278,140 @@
 </div>
 
 <script>
+  const SUPABASE_URL = 'https://azochkxsehllwrhysafm.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_mUSWMxItoPWJ7enCs2o-cg_l6bs06pM';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const PLAN_NAMES = { free: '🆓 Bepul', premium: '💎 Premium', vip: '👑 VIP' };
+  const PLAN_LIMITS = {
+    free: { messages: 25, images: 7 },
+    premium: { messages: 150, images: 20 },
+    vip: { messages: 1000, images: 100 }
+  };
+
+  let currentSession = null;
+  let userProfile = null;
+  let isSignUpMode = false;
+
+  const authModal = document.getElementById('authModal');
+  const authEmail = document.getElementById('authEmail');
+  const authPassword = document.getElementById('authPassword');
+  const authSubmitBtn = document.getElementById('authSubmitBtn');
+  const authError = document.getElementById('authError');
+  const authTitle = document.getElementById('authTitle');
+  const switchText = document.getElementById('switchText');
+  const switchLink = document.getElementById('switchLink');
+
+  const accountBtn = document.getElementById('accountBtn');
+  const accountMenu = document.getElementById('accountMenu');
+  const menuEmail = document.getElementById('menuEmail');
+  const menuPlan = document.getElementById('menuPlan');
+  const menuUsage = document.getElementById('menuUsage');
+  const upgradeBtn = document.getElementById('upgradeBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const tariffModal = document.getElementById('tariffModal');
+  const closeTariffBtn = document.getElementById('closeTariffBtn');
+
+  switchLink.addEventListener('click', () => {
+    isSignUpMode = !isSignUpMode;
+    authTitle.textContent = isSignUpMode ? "Ro'yxatdan o'tish" : 'Kirish';
+    authSubmitBtn.textContent = isSignUpMode ? "Ro'yxatdan o'tish" : 'Kirish';
+    switchText.textContent = isSignUpMode ? 'Hisobingiz bormi?' : "Hisobingiz yo'qmi?";
+    switchLink.textContent = isSignUpMode ? 'Kirish' : "Ro'yxatdan o'tish";
+    authError.textContent = '';
+  });
+
+  authSubmitBtn.addEventListener('click', async () => {
+    const email = authEmail.value.trim();
+    const password = authPassword.value;
+    if (!email || !password) {
+      authError.textContent = 'Email va parolni kiriting';
+      return;
+    }
+    authSubmitBtn.disabled = true;
+    authError.textContent = '';
+    try {
+      if (isSignUpMode) {
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) throw error;
+        if (data.session) {
+          currentSession = data.session;
+          await afterLogin();
+        } else {
+          authError.textContent = "Ro'yxatdan o'tdingiz! Emailingizni tasdiqlab, keyin kiring.";
+        }
+      } else {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        currentSession = data.session;
+        await afterLogin();
+      }
+    } catch (e) {
+      authError.textContent = e.message || 'Xatolik yuz berdi';
+    } finally {
+      authSubmitBtn.disabled = false;
+    }
+  });
+
+  logoutBtn.addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
+    location.reload();
+  });
+
+  accountBtn.addEventListener('click', () => accountMenu.classList.toggle('show'));
+  upgradeBtn.addEventListener('click', () => {
+    accountMenu.classList.remove('show');
+    tariffModal.classList.add('show');
+  });
+  closeTariffBtn.addEventListener('click', () => tariffModal.classList.remove('show'));
+
+  async function loadProfile() {
+    const { data, error } = await supabaseClient
+      .from('user_profiles')
+      .select('*')
+      .eq('id', currentSession.user.id)
+      .single();
+    if (error) { console.error(error); return; }
+    userProfile = data;
+
+    const today = new Date().toISOString().slice(0, 10);
+    if (userProfile.last_reset_date !== today) {
+      await supabaseClient.from('user_profiles').update({
+        messages_used_today: 0, images_used_today: 0, last_reset_date: today
+      }).eq('id', currentSession.user.id);
+      userProfile.messages_used_today = 0;
+      userProfile.images_used_today = 0;
+      userProfile.last_reset_date = today;
+    }
+    renderAccountInfo();
+  }
+
+  function renderAccountInfo() {
+    if (!userProfile) return;
+    const limits = PLAN_LIMITS[userProfile.plan] || PLAN_LIMITS.free;
+    menuEmail.textContent = currentSession.user.email;
+    menuPlan.textContent = PLAN_NAMES[userProfile.plan] || PLAN_NAMES.free;
+    menuUsage.textContent = `Xabar: ${userProfile.messages_used_today}/${limits.messages} · Rasm: ${userProfile.images_used_today}/${limits.images}`;
+    accountBtn.textContent = (currentSession.user.email[0] || '?').toUpperCase();
+  }
+
+  async function afterLogin() {
+    authModal.classList.add('hidden');
+    await loadProfile();
+    startNewChat();
+  }
+
+  async function initAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      currentSession = session;
+      await afterLogin();
+    } else {
+      authModal.classList.remove('hidden');
+    }
+  }
+
+  // ---- CHAT LOGIC ----
   const messagesEl = document.getElementById('messages');
   const inputEl = document.getElementById('input');
   const sendBtn = document.getElementById('sendBtn');
@@ -254,6 +533,7 @@
   async function sendMessage() {
     const text = inputEl.value.trim();
     if (!text) return;
+    if (!currentSession) return;
     inputEl.value = '';
 
     const isFirstMessage = history.length === 0;
@@ -269,12 +549,24 @@
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentSession.access_token}`
+        },
         body: JSON.stringify({ messages: history })
       });
       const data = await res.json();
 
-      if (data.type === 'image') {
+      if (data.type === 'auth_required') {
+        loadingEl.remove();
+        authModal.classList.remove('hidden');
+        return;
+      }
+
+      if (data.type === 'limit') {
+        loadingEl.textContent = data.reply;
+        tariffModal.classList.add('show');
+      } else if (data.type === 'image') {
         loadingEl.remove();
         addMessageToDOM('assistant', data.reply, true);
         history.push({ role: 'assistant', content: data.reply });
@@ -283,6 +575,7 @@
         history.push({ role: 'assistant', content: data.reply || '' });
       }
       persistCurrentChat(text);
+      await loadProfile();
     } catch (e) {
       loadingEl.textContent = "Xatolik yuz berdi. Qayta urin.";
     } finally {
@@ -302,8 +595,8 @@
   overlay.addEventListener('click', closeSidebar);
   newChatBtn.addEventListener('click', startNewChat);
 
-  startNewChat();
   if (window.innerWidth > 640) sidebar.classList.remove('hidden');
+  initAuth();
 </script>
 </body>
 </html>
