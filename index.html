@@ -14,13 +14,20 @@
     color: #f2ede4;
     display: flex;
   }
-  #app { display: flex; width: 100%; height: 100vh; }
+  #app { display: flex; width: 100%; height: 100vh; position: relative; }
+
+  #overlay {
+    display: none;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 15;
+  }
+  #overlay.show { display: block; }
 
   #sidebar {
-    width: 260px; background: rgba(0,0,0,0.25);
+    width: 260px; background: #10162a;
     border-right: 1px solid rgba(242,237,228,0.12);
     display: flex; flex-direction: column;
     transition: margin-left 0.25s ease;
+    position: fixed; top: 0; left: 0; height: 100vh; z-index: 20;
   }
   #sidebar.hidden { margin-left: -260px; }
   #newChatBtn {
@@ -40,7 +47,7 @@
   .history-item .del { opacity: 0.5; font-size: 12px; flex-shrink: 0; }
   .history-item .del:hover { opacity: 1; }
 
-  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; width: 100%; }
   header {
     padding: 18px 20px; border-bottom: 1px solid rgba(242,237,228,0.12);
     display: flex; align-items: center; gap: 14px;
@@ -95,13 +102,15 @@
   }
   button.send:disabled { background: rgba(224,164,88,0.3); cursor: default; }
 
-  @media (max-width: 640px) {
-    #sidebar { position: fixed; z-index: 10; height: 100vh; }
+  @media (min-width: 641px) {
+    #sidebar { position: relative; }
+    #overlay { display: none !important; }
   }
 </style>
 </head>
 <body>
 <div id="app">
+  <div id="overlay"></div>
   <div id="sidebar" class="hidden">
     <button id="newChatBtn">+ Yangi suhbat</button>
     <div id="historyList"></div>
@@ -131,6 +140,7 @@
   const menuBtn = document.getElementById('menuBtn');
   const newChatBtn = document.getElementById('newChatBtn');
   const historyList = document.getElementById('historyList');
+  const overlay = document.getElementById('overlay');
 
   const WELCOME = "Salom! Men Hamrohim — sening shaxsiy AI do'sting. Nima haqida gaplashamiz?";
 
@@ -140,6 +150,16 @@
 
   function saveChats() {
     localStorage.setItem('hamrohim_chats', JSON.stringify(allChats));
+  }
+
+  function closeSidebar() {
+    sidebar.classList.add('hidden');
+    overlay.classList.remove('show');
+  }
+
+  function toggleSidebar() {
+    sidebar.classList.toggle('hidden');
+    overlay.classList.toggle('show');
   }
 
   function renderHistory() {
@@ -164,7 +184,10 @@
       });
       item.appendChild(titleSpan);
       item.appendChild(delSpan);
-      item.addEventListener('click', () => loadChat(chat.id));
+      item.addEventListener('click', () => {
+        loadChat(chat.id);
+        closeSidebar();
+      });
       historyList.appendChild(item);
     });
   }
@@ -204,6 +227,7 @@
     history = [];
     renderMessages();
     renderHistory();
+    closeSidebar();
   }
 
   function loadChat(id) {
@@ -274,7 +298,8 @@
       sendMessage();
     }
   });
-  menuBtn.addEventListener('click', () => sidebar.classList.toggle('hidden'));
+  menuBtn.addEventListener('click', toggleSidebar);
+  overlay.addEventListener('click', closeSidebar);
   newChatBtn.addEventListener('click', startNewChat);
 
   startNewChat();
