@@ -13,15 +13,41 @@
     font-family: 'Helvetica Neue', Arial, sans-serif;
     color: #f2ede4;
     display: flex;
-    flex-direction: column;
   }
-  #app { display: flex; flex-direction: column; height: 100vh; }
+  #app { display: flex; width: 100%; height: 100vh; }
+
+  #sidebar {
+    width: 260px; background: rgba(0,0,0,0.25);
+    border-right: 1px solid rgba(242,237,228,0.12);
+    display: flex; flex-direction: column;
+    transition: margin-left 0.25s ease;
+  }
+  #sidebar.hidden { margin-left: -260px; }
+  #newChatBtn {
+    margin: 14px; padding: 10px; border-radius: 12px;
+    background: linear-gradient(135deg, #e0a458, #c97b3c);
+    color: #1a1206; font-weight: 700; border: none; cursor: pointer; font-size: 14px;
+  }
+  #historyList { flex: 1; overflow-y: auto; padding: 0 10px; }
+  .history-item {
+    padding: 10px 12px; margin-bottom: 6px; border-radius: 10px;
+    background: rgba(242,237,228,0.06); font-size: 13.5px; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  }
+  .history-item:hover { background: rgba(242,237,228,0.13); }
+  .history-item.active { background: rgba(224,164,88,0.25); }
+  .history-item .del { opacity: 0.5; font-size: 12px; flex-shrink: 0; }
+  .history-item .del:hover { opacity: 1; }
+
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
   header {
-    padding: 22px 24px 18px;
-    border-bottom: 1px solid rgba(242,237,228,0.12);
-    display: flex;
-    align-items: center;
-    gap: 14px;
+    padding: 18px 20px; border-bottom: 1px solid rgba(242,237,228,0.12);
+    display: flex; align-items: center; gap: 14px;
+  }
+  #menuBtn {
+    background: none; border: none; color: #f2ede4; font-size: 22px;
+    cursor: pointer; padding: 4px 8px;
   }
   .logo {
     width: 42px; height: 42px; border-radius: 50%;
@@ -62,27 +88,38 @@
     padding: 12px 14px; color: #f2ede4; font-size: 15px; outline: none;
     font-family: inherit;
   }
-  button {
+  button.send {
     background: linear-gradient(135deg, #e0a458, #c97b3c);
     border: none; border-radius: 14px; padding: 0 20px;
     color: #1a1206; font-weight: 700; font-size: 15px; cursor: pointer;
   }
-  button:disabled { background: rgba(224,164,88,0.3); cursor: default; }
+  button.send:disabled { background: rgba(224,164,88,0.3); cursor: default; }
+
+  @media (max-width: 640px) {
+    #sidebar { position: fixed; z-index: 10; height: 100vh; }
+  }
 </style>
 </head>
 <body>
 <div id="app">
-  <header>
-    <div class="logo">🤝</div>
-    <div>
-      <div class="title">Hamrohim</div>
-      <div class="subtitle">doim yoningda</div>
+  <div id="sidebar" class="hidden">
+    <button id="newChatBtn">+ Yangi suhbat</button>
+    <div id="historyList"></div>
+  </div>
+  <div id="main">
+    <header>
+      <button id="menuBtn">☰</button>
+      <div class="logo">🤝</div>
+      <div>
+        <div class="title">Hamrohim</div>
+        <div class="subtitle">doim yoningda</div>
+      </div>
+    </header>
+    <div id="messages"></div>
+    <div id="inputbar">
+      <textarea id="input" rows="1" placeholder="Xabar yoz..."></textarea>
+      <button class="send" id="sendBtn">Yubor</button>
     </div>
-  </header>
-  <div id="messages"></div>
-  <div id="inputbar">
-    <textarea id="input" rows="1" placeholder="Xabar yoz..."></textarea>
-    <button id="sendBtn">Yubor</button>
   </div>
 </div>
 
@@ -90,9 +127,62 @@
   const messagesEl = document.getElementById('messages');
   const inputEl = document.getElementById('input');
   const sendBtn = document.getElementById('sendBtn');
+  const sidebar = document.getElementById('sidebar');
+  const menuBtn = document.getElementById('menuBtn');
+  const newChatBtn = document.getElementById('newChatBtn');
+  const historyList = document.getElementById('historyList');
+
+  const WELCOME = "Salom! Men Hamrohim — sening shaxsiy AI do'sting. Nima haqida gaplashamiz?";
+
+  let allChats = JSON.parse(localStorage.getItem('hamrohim_chats') || '[]');
+  let currentChatId = null;
   let history = [];
 
-  function addMessage(role, text, isImage = false) {
+  function saveChats() {
+    localStorage.setItem('hamrohim_chats', JSON.stringify(allChats));
+  }
+
+  function renderHistory() {
+    historyList.innerHTML = '';
+    allChats.slice().reverse().forEach(chat => {
+      const item = document.createElement('div');
+      item.className = 'history-item' + (chat.id === currentChatId ? ' active' : '');
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = chat.title || 'Yangi suhbat';
+      titleSpan.style.overflow = 'hidden';
+      titleSpan.style.textOverflow = 'ellipsis';
+      titleSpan.style.whiteSpace = 'nowrap';
+      const delSpan = document.createElement('span');
+      delSpan.className = 'del';
+      delSpan.textContent = '✕';
+      delSpan.addEventListener('click', (e) => {
+        e.stopPropagation();
+        allChats = allChats.filter(c => c.id !== chat.id);
+        saveChats();
+        if (chat.id === currentChatId) startNewChat();
+        else renderHistory();
+      });
+      item.appendChild(titleSpan);
+      item.appendChild(delSpan);
+      item.addEventListener('click', () => loadChat(chat.id));
+      historyList.appendChild(item);
+    });
+  }
+
+  function renderMessages() {
+    messagesEl.innerHTML = '';
+    if (history.length === 0) {
+      addMessageToDOM('assistant', WELCOME);
+    } else {
+      history.forEach(m => {
+        const isImg = m.role === 'assistant' && typeof m.content === 'string' && m.content.startsWith('https://image.pollinations.ai/');
+        addMessageToDOM(m.role, m.content, isImg);
+      });
+    }
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function addMessageToDOM(role, text, isImage = false) {
     const div = document.createElement('div');
     div.className = 'msg ' + role;
     if (isImage) {
@@ -106,20 +196,51 @@
       div.textContent = text;
     }
     messagesEl.appendChild(div);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
     return div;
   }
 
-  addMessage('assistant', "Salom! Men Hamrohim — sening shaxsiy AI do'sting. Nima haqida gaplashamiz?");
+  function startNewChat() {
+    currentChatId = 'chat_' + Date.now();
+    history = [];
+    renderMessages();
+    renderHistory();
+  }
+
+  function loadChat(id) {
+    const chat = allChats.find(c => c.id === id);
+    if (!chat) return;
+    currentChatId = id;
+    history = chat.messages;
+    renderMessages();
+    renderHistory();
+  }
+
+  function persistCurrentChat(firstUserText) {
+    let chat = allChats.find(c => c.id === currentChatId);
+    if (!chat) {
+      chat = { id: currentChatId, title: firstUserText.slice(0, 30), messages: history };
+      allChats.push(chat);
+    } else {
+      chat.messages = history;
+    }
+    saveChats();
+    renderHistory();
+  }
 
   async function sendMessage() {
     const text = inputEl.value.trim();
     if (!text) return;
     inputEl.value = '';
-    addMessage('user', text);
+
+    const isFirstMessage = history.length === 0;
+    if (isFirstMessage) messagesEl.innerHTML = '';
+
+    addMessageToDOM('user', text);
     history.push({ role: 'user', content: text });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
     sendBtn.disabled = true;
-    const loadingEl = addMessage('assistant', 'Hamrohim yozmoqda...');
+    const loadingEl = addMessageToDOM('assistant', 'Hamrohim yozmoqda...');
+    messagesEl.scrollTop = messagesEl.scrollHeight;
 
     try {
       const res = await fetch('/api/chat', {
@@ -131,16 +252,18 @@
 
       if (data.type === 'image') {
         loadingEl.remove();
-        addMessage('assistant', data.reply, true);
-        history.push({ role: 'assistant', content: '[rasm yuborildi]' });
+        addMessageToDOM('assistant', data.reply, true);
+        history.push({ role: 'assistant', content: data.reply });
       } else {
         loadingEl.textContent = data.reply || "Kechirasan, javob bera olmadim.";
         history.push({ role: 'assistant', content: data.reply || '' });
       }
+      persistCurrentChat(text);
     } catch (e) {
       loadingEl.textContent = "Xatolik yuz berdi. Qayta urin.";
     } finally {
       sendBtn.disabled = false;
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
   }
 
@@ -151,5 +274,11 @@
       sendMessage();
     }
   });
+  menuBtn.addEventListener('click', () => sidebar.classList.toggle('hidden'));
+  newChatBtn.addEventListener('click', startNewChat);
+
+  startNewChat();
+  if (window.innerWidth > 640) sidebar.classList.remove('hidden');
 </script>
 </body>
+</html>
