@@ -4,54 +4,13 @@ export default async function handler(req, res) {
   }
 
   const { messages } = req.body;
-  const lastMessage = (messages[messages.length - 1]?.content || '').toLowerCase();
+  const lastMessage = messages[messages.length - 1]?.content || '';
 
-  const isImageRequest = /rasm|surat|chiz/i.test(lastMessage);
-
-  if (isImageRequest) {
-    let promptUz = lastMessage
-      .replace(/rasm\w*/gi, '')
-      .replace(/surat\w*/gi, '')
-      .replace(/yarat\w*/gi, '')
-      .replace(/chiz\w*/gi, '')
-      .replace(/sol\w*/gi, '')
-      .trim();
-    if (!promptUz) promptUz = 'chiroyli manzara';
-
-    let promptEn = promptUz;
-
-    try {
-      const translateRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'openai/gpt-oss-120b',
-          messages: [
-            {
-              role: 'system',
-              content: "Translate the given Uzbek text into a short, vivid English image-generation prompt. Reply with ONLY the English prompt, nothing else."
-            },
-            { role: 'user', content: promptUz }
-          ]
-        })
-      });
-      const translateData = await translateRes.json();
-      const translated = translateData.choices?.[0]?.message?.content?.trim();
-      if (translated) promptEn = translated;
-    } catch (e) {
-      console.error('Tarjima xatosi:', e);
-    }
-
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptEn)}?width=768&height=768&nologo=true`;
-
-    return res.status(200).json({ reply: imageUrl, type: 'image' });
-  }
+  const SYSTEM_PROMPT = "Sening isming Hamrohim. Seni Bilolxon yaratgan. Agar kim seni yaratgani yoki kim ekaning haqida so'ralsa, faqat shuni ayt: \"Meni Bilolxon yaratgan.\" Boshqa hech qanday kompaniya (OpenAI, Google, Meta va h.k.) nomini aslo aytma va tilga olma. Sen o'zbek tilida gaplashadigan, do'stona, iliq va samimiy AI yordamchisan. Javoblaring qisqa, tabiiy va do'stona bo'lsin, lekin foydali va aniq bo'lishi kerak.";
 
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    // 1-qadam: bu xabar rasm so'rovimi yoki yo'qmi, AI orqali aniqlaymiz
+    const intentRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -62,8 +21,38 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: "Sening isming Hamrohim. Seni Bilolxon yaratgan. Agar kim seni yaratgani yoki kim ekaning haqida so'ralsa, faqat shuni ayt: \"Meni Bilolxon yaratgan.\" Boshqa hech qanday kompaniya (OpenAI, Google, Meta va h.k.) nomini aslo aytma va tilga olma. Sen o'zbek tilida gaplashadigan, do'stona, iliq va samimiy AI yordamchisan. Javoblaring qisqa, tabiiy va do'stona bo'lsin, lekin foydali va aniq bo'lishi kerak."
+            content: "You are an intent classifier. Given the recent conversation, decide if the LAST user message is asking to create, draw, generate, or modify an IMAGE/PICTURE (in any language, including Uzbek, even if phrased as a follow-up like 'add a person behind it' without explicitly saying 'image'). Reply with ONLY valid JSON, nothing else, in this exact format: {\"isImage\": true or false, \"prompt\": \"a short vivid English description of the full image to generate, combining context from earlier turns if relevant\"}. If isImage is false, prompt can be empty string."
           },
+          ...messages.slice(-6)
+        ]
+      })
+    });
+    const intentData = await intentRes.json();
+    let intent = { isImage: false, prompt: '' };
+    try {
+      const raw = intentData.choices?.[0]?.message?.content?.trim() || '{}';
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      intent = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+    } catch (e) {
+      console.error('Intent parse xatosi:', e, intentData);
+    }
+
+    if (intent.isImage && intent.prompt) {
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(intent.prompt)}?width=768&height=768&nologo=true`;
+      return res.status(200).json({ reply: imageUrl, type: 'image' });
+    }
+
+    // 2-qadam: oddiy matnli suhbat
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
           ...messages
         ]
       })
