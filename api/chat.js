@@ -9,16 +9,43 @@ export default async function handler(req, res) {
   const isImageRequest = /rasm|surat|chiz/i.test(lastMessage);
 
   if (isImageRequest) {
-    let prompt = lastMessage
+    let promptUz = lastMessage
       .replace(/rasm\w*/gi, '')
       .replace(/surat\w*/gi, '')
       .replace(/yarat\w*/gi, '')
       .replace(/chiz\w*/gi, '')
       .replace(/sol\w*/gi, '')
       .trim();
-    if (!prompt) prompt = 'beautiful art';
+    if (!promptUz) promptUz = 'chiroyli manzara';
 
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&nologo=true`;
+    let promptEn = promptUz;
+
+    try {
+      const translateRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-oss-120b',
+          messages: [
+            {
+              role: 'system',
+              content: "Translate the given Uzbek text into a short, vivid English image-generation prompt. Reply with ONLY the English prompt, nothing else."
+            },
+            { role: 'user', content: promptUz }
+          ]
+        })
+      });
+      const translateData = await translateRes.json();
+      const translated = translateData.choices?.[0]?.message?.content?.trim();
+      if (translated) promptEn = translated;
+    } catch (e) {
+      console.error('Tarjima xatosi:', e);
+    }
+
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptEn)}?width=768&height=768&nologo=true`;
 
     return res.status(200).json({ reply: imageUrl, type: 'image' });
   }
