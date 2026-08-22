@@ -1,287 +1,58 @@
-<!DOCTYPE html>
-<html lang="uz">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hamrohim</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    min-height: 100vh;
-    background: radial-gradient(circle at 20% 0%, #1c2541 0%, #0d1321 55%, #080b14 100%);
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    color: #f2ede4;
-    display: flex;
-  }
-  #app { display: flex; width: 100%; height: 100vh; }
-
-  /* SIDEBAR */
-  #sidebar {
-    width: 260px; background: rgba(0,0,0,0.25);
-    border-right: 1px solid rgba(242,237,228,0.12);
-    display: flex; flex-direction: column;
-    transition: margin-left 0.25s ease;
-  }
-  #sidebar.hidden { margin-left: -260px; }
-  #newChatBtn {
-    margin: 14px; padding: 10px; border-radius: 12px;
-    background: linear-gradient(135deg, #e0a458, #c97b3c);
-    color: #1a1206; font-weight: 700; border: none; cursor: pointer; font-size: 14px;
-  }
-  #historyList { flex: 1; overflow-y: auto; padding: 0 10px; }
-  .history-item {
-    padding: 10px 12px; margin-bottom: 6px; border-radius: 10px;
-    background: rgba(242,237,228,0.06); font-size: 13.5px; cursor: pointer;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    display: flex; justify-content: space-between; align-items: center; gap: 6px;
-  }
-  .history-item:hover { background: rgba(242,237,228,0.13); }
-  .history-item.active { background: rgba(224,164,88,0.25); }
-  .history-item .del { opacity: 0.5; font-size: 12px; flex-shrink: 0; }
-  .history-item .del:hover { opacity: 1; }
-
-  /* MAIN CHAT */
-  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-  header {
-    padding: 18px 20px; border-bottom: 1px solid rgba(242,237,228,0.12);
-    display: flex; align-items: center; gap: 14px;
-  }
-  #menuBtn {
-    background: none; border: none; color: #f2ede4; font-size: 22px;
-    cursor: pointer; padding: 4px 8px;
-  }
-  .logo {
-    width: 42px; height: 42px; border-radius: 50%;
-    background: linear-gradient(135deg, #e0a458 0%, #c97b3c 100%);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; flex-shrink: 0;
-    box-shadow: 0 0 18px rgba(224,164,88,0.35);
-  }
-  .title { font-size: 20px; font-weight: 700; }
-  .subtitle { font-size: 12.5px; color: rgba(242,237,228,0.55); }
-  #messages {
-    flex: 1; overflow-y: auto; padding: 24px 16px;
-    display: flex; flex-direction: column; gap: 14px;
-  }
-  .msg {
-    max-width: 78%; padding: 12px 16px; font-size: 15.5px; line-height: 1.5;
-    border-radius: 18px;
-  }
-  .msg.user {
-    align-self: flex-end;
-    background: linear-gradient(135deg, #e0a458, #c97b3c);
-    color: #1a1206;
-    border-radius: 18px 18px 4px 18px;
-  }
-  .msg.assistant {
-    align-self: flex-start;
-    background: rgba(242,237,228,0.08);
-    border: 1px solid rgba(242,237,228,0.1);
-    border-radius: 18px 18px 18px 4px;
-  }
-  #inputbar {
-    padding: 16px; border-top: 1px solid rgba(242,237,228,0.12);
-    display: flex; gap: 10px;
-  }
-  textarea {
-    flex: 1; resize: none; background: rgba(242,237,228,0.06);
-    border: 1px solid rgba(242,237,228,0.18); border-radius: 14px;
-    padding: 12px 14px; color: #f2ede4; font-size: 15px; outline: none;
-    font-family: inherit;
-  }
-  button.send {
-    background: linear-gradient(135deg, #e0a458, #c97b3c);
-    border: none; border-radius: 14px; padding: 0 20px;
-    color: #1a1206; font-weight: 700; font-size: 15px; cursor: pointer;
-  }
-  button.send:disabled { background: rgba(224,164,88,0.3); cursor: default; }
-
-  @media (max-width: 640px) {
-    #sidebar { position: fixed; z-index: 10; height: 100vh; }
-  }
-</style>
-</head>
-<body>
-<div id="app">
-  <div id="sidebar" class="hidden">
-    <button id="newChatBtn">+ Yangi suhbat</button>
-    <div id="historyList"></div>
-  </div>
-  <div id="main">
-    <header>
-      <button id="menuBtn">☰</button>
-      <div class="logo">🤝</div>
-      <div>
-        <div class="title">Hamrohim</div>
-        <div class="subtitle">doim yoningda</div>
-      </div>
-    </header>
-    <div id="messages"></div>
-    <div id="inputbar">
-      <textarea id="input" rows="1" placeholder="Xabar yoz..."></textarea>
-      <button class="send" id="sendBtn">Yubor</button>
-    </div>
-  </div>
-</div>
-
-<script>
-  const messagesEl = document.getElementById('messages');
-  const inputEl = document.getElementById('input');
-  const sendBtn = document.getElementById('sendBtn');
-  const sidebar = document.getElementById('sidebar');
-  const menuBtn = document.getElementById('menuBtn');
-  const newChatBtn = document.getElementById('newChatBtn');
-  const historyList = document.getElementById('historyList');
-
-  const WELCOME = "Salom! Men Hamrohim — sening shaxsiy AI do'sting. Nima haqida gaplashamiz?";
-
-  let allChats = JSON.parse(localStorage.getItem('hamrohim_chats') || '[]');
-  let currentChatId = null;
-  let history = [];
-
-  function saveChats() {
-    localStorage.setItem('hamrohim_chats', JSON.stringify(allChats));
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  function renderHistory() {
-    historyList.innerHTML = '';
-    allChats.slice().reverse().forEach(chat => {
-      const item = document.createElement('div');
-      item.className = 'history-item' + (chat.id === currentChatId ? ' active' : '');
-      const titleSpan = document.createElement('span');
-      titleSpan.textContent = chat.title || 'Yangi suhbat';
-      titleSpan.style.overflow = 'hidden';
-      titleSpan.style.textOverflow = 'ellipsis';
-      titleSpan.style.whiteSpace = 'nowrap';
-      const delSpan = document.createElement('span');
-      delSpan.className = 'del';
-      delSpan.textContent = '✕';
-      delSpan.addEventListener('click', (e) => {
-        e.stopPropagation();
-        allChats = allChats.filter(c => c.id !== chat.id);
-        saveChats();
-        if (chat.id === currentChatId) startNewChat();
-        else renderHistory();
-      });
-      item.appendChild(titleSpan);
-      item.appendChild(delSpan);
-      item.addEventListener('click', () => loadChat(chat.id));
-      historyList.appendChild(item);
+  const { messages } = req.body;
+  const lastMessage = (messages[messages.length - 1]?.content || '').toLowerCase();
+
+  const isImageRequest = /rasm|surat|chiz/i.test(lastMessage);
+
+  if (isImageRequest) {
+    let prompt = lastMessage
+      .replace(/rasm\w*/gi, '')
+      .replace(/surat\w*/gi, '')
+      .replace(/yarat\w*/gi, '')
+      .replace(/chiz\w*/gi, '')
+      .replace(/sol\w*/gi, '')
+      .trim();
+    if (!prompt) prompt = 'beautiful art';
+
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&nologo=true`;
+
+    return res.status(200).json({ reply: imageUrl, type: 'image' });
+  }
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          {
+            role: 'system',
+            content: "Sening isming Hamrohim. Seni Bilolxon yaratgan. Agar kim seni yaratgani yoki kim ekaning haqida so'ralsa, faqat shuni ayt: \"Meni Bilolxon yaratgan.\" Boshqa hech qanday kompaniya (OpenAI, Google, Meta va h.k.) nomini aslo aytma va tilga olma. Sen o'zbek tilida gaplashadigan, do'stona, iliq va samimiy AI yordamchisan. Javoblaring qisqa, tabiiy va do'stona bo'lsin, lekin foydali va aniq bo'lishi kerak."
+          },
+          ...messages
+        ]
+      })
     });
-  }
 
-  function renderMessages() {
-    messagesEl.innerHTML = '';
-    if (history.length === 0) {
-      addMessageToDOM('assistant', WELCOME);
-    } else {
-      history.forEach(m => {
-        const isImg = m.role === 'assistant' && typeof m.content === 'string' && m.content.startsWith('https://image.pollinations.ai/');
-        addMessageToDOM(m.role, m.content, isImg);
-      });
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Groq API xatosi:', data);
+      return res.status(500).json({ error: data.error?.message || 'Groq API xatosi' });
     }
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    const reply = data.choices?.[0]?.message?.content || "Kechirasan, javob topilmadi.";
+    res.status(200).json({ reply, type: 'text' });
+  } catch (err) {
+    console.error('Server xatosi:', err);
+    res.status(500).json({ error: 'Server xatosi: ' + err.message });
   }
-
-  function addMessageToDOM(role, text, isImage = false) {
-    const div = document.createElement('div');
-    div.className = 'msg ' + role;
-    if (isImage) {
-      const img = document.createElement('img');
-      img.src = text;
-      img.style.maxWidth = '100%';
-      img.style.borderRadius = '12px';
-      img.style.display = 'block';
-      div.appendChild(img);
-    } else {
-      div.textContent = text;
-    }
-    messagesEl.appendChild(div);
-    return div;
-  }
-
-  function startNewChat() {
-    currentChatId = 'chat_' + Date.now();
-    history = [];
-    renderMessages();
-    renderHistory();
-  }
-
-  function loadChat(id) {
-    const chat = allChats.find(c => c.id === id);
-    if (!chat) return;
-    currentChatId = id;
-    history = chat.messages;
-    renderMessages();
-    renderHistory();
-  }
-
-  function persistCurrentChat(firstUserText) {
-    let chat = allChats.find(c => c.id === currentChatId);
-    if (!chat) {
-      chat = { id: currentChatId, title: firstUserText.slice(0, 30), messages: history };
-      allChats.push(chat);
-    } else {
-      chat.messages = history;
-    }
-    saveChats();
-    renderHistory();
-  }
-
-  async function sendMessage() {
-    const text = inputEl.value.trim();
-    if (!text) return;
-    inputEl.value = '';
-
-    const isFirstMessage = history.length === 0;
-    if (isFirstMessage) messagesEl.innerHTML = '';
-
-    addMessageToDOM('user', text);
-    history.push({ role: 'user', content: text });
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-    sendBtn.disabled = true;
-    const loadingEl = addMessageToDOM('assistant', 'Hamrohim yozmoqda...');
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history })
-      });
-      const data = await res.json();
-
-      if (data.type === 'image') {
-        loadingEl.remove();
-        addMessageToDOM('assistant', data.reply, true);
-        history.push({ role: 'assistant', content: data.reply });
-      } else {
-        loadingEl.textContent = data.reply || "Kechirasan, javob bera olmadim.";
-        history.push({ role: 'assistant', content: data.reply || '' });
-      }
-      persistCurrentChat(text);
-    } catch (e) {
-      loadingEl.textContent = "Xatolik yuz berdi. Qayta urin.";
-    } finally {
-      sendBtn.disabled = false;
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-  }
-
-  sendBtn.addEventListener('click', sendMessage);
-  inputEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-  menuBtn.addEventListener('click', () => sidebar.classList.toggle('hidden'));
-  newChatBtn.addEventListener('click', startNewChat);
-
-  // Boshlanish
-  startNewChat();
-  if (window.innerWidth > 640) sidebar.classList.remove('hidden');
-</script>
-</body>
-</html>
+}
