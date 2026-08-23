@@ -270,7 +270,8 @@
       payInfo: `To'lov qilish uchun quyidagi kartaga o'tkazma qiling:<br>💳 <b>4067 0700 0924 7748</b><br>👤 Dilnozaxon YULDASHEVA<br><br>To'lovni amalga oshirgach, yuqoridagi "To'ladim" tugmasini bosing — administratorga avtomatik xabar yuboriladi.`,
       payAlert: "So'rovingiz yuborildi! Tez orada tasdiqlanadi.", payErr: "Xatolik yuz berdi, qayta urinib ko'ring.",
       planNames: { free: '🆓 Bepul', premium: '💎 Premium', vip: '👑 VIP', admin: '⚡ Admin' },
-      usageLabel: (m, ml, i, il) => `Xabar: ${m}/${ml} · Rasm: ${i}/${il}`
+      usageLabel: (m, ml, i, il) => `Xabar: ${m}/${ml} · Rasm: ${i}/${il}`,
+      newChatTitle: 'Yangi suhbat'
     },
     en: {
       subtitle: 'always by your side', placeholder: 'Type a message...', send: 'Send',
@@ -290,7 +291,8 @@
       payInfo: `Transfer the payment to this card:<br>💳 <b>4067 0700 0924 7748</b><br>👤 Dilnozaxon YULDASHEVA<br><br>After paying, click "I paid" above — the admin will be notified automatically.`,
       payAlert: 'Your request has been sent! It will be confirmed soon.', payErr: 'Something went wrong, please try again.',
       planNames: { free: '🆓 Free', premium: '💎 Premium', vip: '👑 VIP', admin: '⚡ Admin' },
-      usageLabel: (m, ml, i, il) => `Messages: ${m}/${ml} · Images: ${i}/${il}`
+      usageLabel: (m, ml, i, il) => `Messages: ${m}/${ml} · Images: ${i}/${il}`,
+      newChatTitle: 'New chat'
     }
   };
 
@@ -470,6 +472,7 @@
   async function afterLogin() {
     authModal.classList.add('hidden');
     await loadProfile();
+    await loadAllChatsFromCloud();
     startNewChat();
   }
 
@@ -492,28 +495,37 @@
   const historyList = document.getElementById('historyList');
   const overlay = document.getElementById('overlay');
 
-  let allChats = JSON.parse(localStorage.getItem('hamrohim_chats') || '[]');
+  let allChats = [];
   let currentChatId = null;
   let history = [];
 
-  function saveChats() { localStorage.setItem('hamrohim_chats', JSON.stringify(allChats)); }
+  async function loadAllChatsFromCloud() {
+    const { data, error } = await supabaseClient
+      .from('chats')
+      .select('*')
+      .order('updated_at', { ascending: false });
+    if (error) { console.error(error); allChats = []; return; }
+    allChats = data.map(c => ({ id: c.id, title: c.title, messages: c.messages }));
+    renderHistory();
+  }
+
   function closeSidebar() { sidebar.classList.add('hidden'); overlay.classList.remove('show'); }
   function toggleSidebar() { sidebar.classList.toggle('hidden'); overlay.classList.toggle('show'); }
 
   function renderHistory() {
     historyList.innerHTML = '';
-    allChats.slice().reverse().forEach(chat => {
+    allChats.forEach(chat => {
       const item = document.createElement('div');
       item.className = 'history-item' + (chat.id === currentChatId ? ' active' : '');
       const titleSpan = document.createElement('span');
-      titleSpan.textContent = chat.title || (currentLang === 'uz' ? 'Yangi suhbat' : 'New chat');
+      titleSpan.textContent = chat.title || TEXTS[currentLang].newChatTitle;
       titleSpan.style.overflow = 'hidden'; titleSpan.style.textOverflow = 'ellipsis'; titleSpan.style.whiteSpace = 'nowrap';
       const delSpan = document.createElement('span');
       delSpan.className = 'del'; delSpan.textContent = '✕';
-      delSpan.addEventListener('click', (e) => {
+      delSpan.addEventListener('click', async (e) => {
         e.stopPropagation();
+        await supabaseClient.from('chats').delete().eq('id', chat.id);
         allChats = allChats.filter(c => c.id !== chat.id);
-        saveChats();
         if (chat.id === currentChatId) startNewChat();
         else renderHistory();
       });
@@ -549,7 +561,7 @@
   }
 
   function startNewChat() {
-    currentChatId = 'chat_' + Date.now();
+    currentChatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     history = [];
     renderMessages(); renderHistory(); closeSidebar();
   }
@@ -557,17 +569,27 @@
   function loadChat(id) {
     const chat = allChats.find(c => c.id === id);
     if (!chat) return;
-    currentChatId = id; history = chat.messages;
+    currentChatId = id; history = chat.messages || [];
     renderMessages(); renderHistory();
   }
 
-  function persistCurrentChat(firstUserText) {
+  async function persistCurrentChat(firstUserText) {
     let chat = allChats.find(c => c.id === currentChatId);
     if (!chat) {
       chat = { id: currentChatId, title: firstUserText.slice(0, 30), messages: history };
-      allChats.push(chat);
-    } else { chat.messages = history; }
-    saveChats(); renderHistory();
+      allChats.unshift(chat);
+    } else {
+      chat.messages = history;
+    }
+    renderHistory();
+    if (!currentSession) return;
+    await supabaseClient.from('chats').upsert({
+      id: currentChatId,
+      user_id: currentSession.user.id,
+      title: chat.title,
+      messages: history,
+      updated_at: new Date().toISOString()
+    });
   }
 
   async function sendMessage() {
@@ -609,7 +631,7 @@
         loadingEl.textContent = data.reply || TEXTS[currentLang].errReply;
         history.push({ role: 'assistant', content: data.reply || '' });
       }
-      persistCurrentChat(text);
+      await persistCurrentChat(text);
       await loadProfile();
     } catch (e) {
       loadingEl.textContent = TEXTS[currentLang].errGeneric;
