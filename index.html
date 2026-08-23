@@ -288,11 +288,12 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_mUSWMxItoPWJ7enCs2o-cg_l6bs06pM';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const PLAN_NAMES = { free: '🆓 Bepul', premium: '💎 Premium', vip: '👑 VIP' };
+  const PLAN_NAMES = { free: '🆓 Bepul', premium: '💎 Premium', vip: '👑 VIP', admin: '⚡ Admin' };
   const PLAN_LIMITS = {
     free: { messages: 25, images: 7 },
     premium: { messages: 150, images: 20 },
-    vip: { messages: 1000, images: 100 }
+    vip: { messages: 1000, images: 100 },
+    admin: { messages: 999999, images: 999999 }
   };
 
   let currentSession = null;
