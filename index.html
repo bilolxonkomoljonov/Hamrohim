@@ -16,13 +16,8 @@
     display: flex;
   }
   #app { display: flex; width: 100%; height: 100vh; position: relative; }
-
-  #overlay {
-    display: none;
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 15;
-  }
+  #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 15; }
   #overlay.show { display: block; }
-
   #sidebar {
     width: 260px; background: #10162a;
     border-right: 1px solid rgba(242,237,228,0.12);
@@ -47,16 +42,9 @@
   .history-item.active { background: rgba(224,164,88,0.25); }
   .history-item .del { opacity: 0.5; font-size: 12px; flex-shrink: 0; }
   .history-item .del:hover { opacity: 1; }
-
   #main { flex: 1; display: flex; flex-direction: column; min-width: 0; width: 100%; }
-  header {
-    padding: 18px 20px; border-bottom: 1px solid rgba(242,237,228,0.12);
-    display: flex; align-items: center; gap: 14px;
-  }
-  #menuBtn {
-    background: none; border: none; color: #f2ede4; font-size: 22px;
-    cursor: pointer; padding: 4px 8px;
-  }
+  header { padding: 18px 20px; border-bottom: 1px solid rgba(242,237,228,0.12); display: flex; align-items: center; gap: 14px; }
+  #menuBtn { background: none; border: none; color: #f2ede4; font-size: 22px; cursor: pointer; padding: 4px 8px; }
   .logo {
     width: 42px; height: 42px; border-radius: 50%;
     background: linear-gradient(135deg, #e0a458 0%, #c97b3c 100%);
@@ -66,15 +54,19 @@
   }
   .title { font-size: 20px; font-weight: 700; }
   .subtitle { font-size: 12.5px; color: rgba(242,237,228,0.55); }
-  #headerRight { margin-left: auto; position: relative; }
+  #headerRight { margin-left: auto; display: flex; align-items: center; gap: 10px; position: relative; }
+  #langToggle {
+    background: rgba(242,237,228,0.08); border: 1px solid rgba(242,237,228,0.18);
+    color: #f2ede4; border-radius: 10px; padding: 7px 12px; font-size: 13px;
+    font-weight: 700; cursor: pointer;
+  }
   #accountBtn {
     width: 38px; height: 38px; border-radius: 50%;
     background: linear-gradient(135deg, #6b7cff, #4a5bcc);
     border: none; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer;
   }
   #accountMenu {
-    display: none;
-    position: absolute; top: 46px; right: 0; width: 230px;
+    display: none; position: absolute; top: 46px; right: 0; width: 230px;
     background: #171d33; border: 1px solid rgba(242,237,228,0.15);
     border-radius: 14px; padding: 12px; z-index: 30;
     box-shadow: 0 10px 30px rgba(0,0,0,0.4);
@@ -85,43 +77,27 @@
   #accountMenu .usageline { font-size: 12px; color: rgba(242,237,228,0.55); margin-bottom: 10px; }
   #upgradeBtn {
     width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #fff;
-    background: transparent; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer;
-    margin-bottom: 8px;
+    background: transparent; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; margin-bottom: 8px;
   }
   #logoutBtn {
     width: 100%; padding: 9px; border-radius: 10px; border: none;
     background: rgba(242,237,228,0.08); color: #f2ede4; font-size: 13.5px; cursor: pointer;
   }
-
-  #messages {
-    flex: 1; overflow-y: auto; padding: 24px 16px;
-    display: flex; flex-direction: column; gap: 14px;
-  }
-  .msg {
-    max-width: 78%; padding: 12px 16px; font-size: 15.5px; line-height: 1.5;
-    border-radius: 18px;
-  }
+  #messages { flex: 1; overflow-y: auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .msg { max-width: 78%; padding: 12px 16px; font-size: 15.5px; line-height: 1.5; border-radius: 18px; }
   .msg.user {
-    align-self: flex-end;
-    background: linear-gradient(135deg, #e0a458, #c97b3c);
-    color: #1a1206;
-    border-radius: 18px 18px 4px 18px;
+    align-self: flex-end; background: linear-gradient(135deg, #e0a458, #c97b3c);
+    color: #1a1206; border-radius: 18px 18px 4px 18px;
   }
   .msg.assistant {
-    align-self: flex-start;
-    background: rgba(242,237,228,0.08);
-    border: 1px solid rgba(242,237,228,0.1);
-    border-radius: 18px 18px 18px 4px;
+    align-self: flex-start; background: rgba(242,237,228,0.08);
+    border: 1px solid rgba(242,237,228,0.1); border-radius: 18px 18px 18px 4px;
   }
-  #inputbar {
-    padding: 16px; border-top: 1px solid rgba(242,237,228,0.12);
-    display: flex; gap: 10px;
-  }
+  #inputbar { padding: 16px; border-top: 1px solid rgba(242,237,228,0.12); display: flex; gap: 10px; }
   textarea {
     flex: 1; resize: none; background: rgba(242,237,228,0.06);
     border: 1px solid rgba(242,237,228,0.18); border-radius: 14px;
-    padding: 12px 14px; color: #f2ede4; font-size: 15px; outline: none;
-    font-family: inherit;
+    padding: 12px 14px; color: #f2ede4; font-size: 15px; outline: none; font-family: inherit;
   }
   button.send {
     background: linear-gradient(135deg, #e0a458, #c97b3c);
@@ -129,17 +105,12 @@
     color: #1a1206; font-weight: 700; font-size: 15px; cursor: pointer;
   }
   button.send:disabled { background: rgba(224,164,88,0.3); cursor: default; }
-
   #authModal {
     position: fixed; inset: 0; background: #0d1321;
-    display: flex; align-items: center; justify-content: center; z-index: 100;
-    padding: 20px;
+    display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px;
   }
   #authModal.hidden { display: none; }
-  .authBox {
-    width: 100%; max-width: 360px; background: #171d33;
-    border-radius: 18px; padding: 28px 24px; text-align: center;
-  }
+  .authBox { width: 100%; max-width: 360px; background: #171d33; border-radius: 18px; padding: 28px 24px; text-align: center; position: relative; }
   .authBox h2 { margin: 0 0 6px; font-size: 22px; }
   .authBox p { margin: 0 0 20px; font-size: 13px; color: rgba(242,237,228,0.55); }
   .authBox input {
@@ -155,34 +126,25 @@
   .authBox .switch { margin-top: 14px; font-size: 13px; color: rgba(242,237,228,0.6); }
   .authBox .switch a { color: #e0a458; cursor: pointer; text-decoration: underline; }
   .authBox .errMsg { color: #ff8080; font-size: 13px; margin-top: 8px; min-height: 16px; }
-
+  #authLangToggle {
+    position: absolute; top: 16px; right: 16px;
+    background: rgba(242,237,228,0.08); border: 1px solid rgba(242,237,228,0.18);
+    color: #f2ede4; border-radius: 10px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
   #tariffModal {
     position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-    display: none; align-items: center; justify-content: center; z-index: 100;
-    padding: 16px; overflow-y: auto;
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px; overflow-y: auto;
   }
   #tariffModal.show { display: flex; }
-  .tariffBox {
-    width: 100%; max-width: 420px; background: #171d33;
-    border-radius: 18px; padding: 24px; position: relative;
-  }
+  .tariffBox { width: 100%; max-width: 420px; background: #171d33; border-radius: 18px; padding: 24px; position: relative; }
   .tariffBox h2 { margin: 0 0 4px; font-size: 20px; }
-  .tariffBox .closeBtn {
-    position: absolute; top: 16px; right: 16px; background: none; border: none;
-    color: #f2ede4; font-size: 20px; cursor: pointer;
-  }
-  .planCard {
-    border: 1px solid rgba(242,237,228,0.15); border-radius: 14px;
-    padding: 14px 16px; margin-top: 14px;
-  }
+  .tariffBox .closeBtn { position: absolute; top: 16px; right: 16px; background: none; border: none; color: #f2ede4; font-size: 20px; cursor: pointer; }
+  .planCard { border: 1px solid rgba(242,237,228,0.15); border-radius: 14px; padding: 14px 16px; margin-top: 14px; }
   .planCard.highlight { border-color: #e0a458; background: rgba(224,164,88,0.08); }
   .planCard .planName { font-weight: 700; font-size: 16px; margin-bottom: 2px; }
   .planCard .planPrice { font-size: 13.5px; color: #e0a458; margin-bottom: 6px; }
   .planCard .planLimits { font-size: 12.5px; color: rgba(242,237,228,0.6); }
-  .payInfo {
-    margin-top: 18px; padding: 14px; background: rgba(242,237,228,0.06);
-    border-radius: 12px; font-size: 13px; line-height: 1.6;
-  }
+  .payInfo { margin-top: 18px; padding: 14px; background: rgba(242,237,228,0.06); border-radius: 12px; font-size: 13px; line-height: 1.6; }
   .payInfo b { color: #e0a458; }
   .payBtn {
     margin-top: 10px; width: 100%; padding: 9px; border-radius: 10px;
@@ -190,7 +152,6 @@
     color: #1a1206; font-weight: 700; font-size: 13.5px; cursor: pointer;
   }
   .payBtn:disabled { opacity: 0.5; cursor: default; }
-
   @media (min-width: 641px) {
     #sidebar { position: relative; }
     #overlay { display: none !important; }
@@ -201,9 +162,10 @@
 
 <div id="authModal">
   <div class="authBox">
+    <button id="authLangToggle">EN</button>
     <div class="logo" style="margin: 0 auto 14px;">🤝</div>
     <h2 id="authTitle">Kirish</h2>
-    <p>Hamrohim bilan suhbatni davom ettirish uchun tizimga kiring</p>
+    <p id="authDesc">Hamrohim bilan suhbatni davom ettirish uchun tizimga kiring</p>
     <input type="email" id="authEmail" placeholder="Email" />
     <input type="password" id="authPassword" placeholder="Parol" />
     <button class="primary" id="authSubmitBtn">Kirish</button>
@@ -218,30 +180,30 @@
 <div id="tariffModal">
   <div class="tariffBox">
     <button class="closeBtn" id="closeTariffBtn">✕</button>
-    <h2>Tariflar</h2>
-    <p style="font-size:13px; color:rgba(242,237,228,0.55); margin:4px 0 0;">O'zingizga mos tarifni tanlang</p>
+    <h2 id="tariffTitle">Tariflar</h2>
+    <p id="tariffDesc" style="font-size:13px; color:rgba(242,237,228,0.55); margin:4px 0 0;">O'zingizga mos tarifni tanlang</p>
 
     <div class="planCard">
-      <div class="planName">🆓 Bepul</div>
-      <div class="planPrice">0 so'm</div>
-      <div class="planLimits">25 ta xabar/kun · 7 ta rasm/kun</div>
+      <div class="planName" id="planFreeName">🆓 Bepul</div>
+      <div class="planPrice" id="planFreePrice">0 so'm</div>
+      <div class="planLimits" id="planFreeLimits">25 ta xabar/kun · 7 ta rasm/kun</div>
     </div>
 
     <div class="planCard highlight">
-      <div class="planName">💎 Premium</div>
+      <div class="planName" id="planPremiumName">💎 Premium</div>
       <div class="planPrice">300 000 so'm / oy (~$25)</div>
-      <div class="planLimits">150 ta xabar/kun · 20 ta rasm/kun</div>
-      <button class="payBtn" onclick="notifyPayment('premium')">To'ladim</button>
+      <div class="planLimits" id="planPremiumLimits">150 ta xabar/kun · 20 ta rasm/kun</div>
+      <button class="payBtn" id="payPremiumBtn" onclick="notifyPayment('premium')">To'ladim</button>
     </div>
 
     <div class="planCard highlight">
-      <div class="planName">👑 VIP</div>
+      <div class="planName" id="planVipName">👑 VIP</div>
       <div class="planPrice">500 000 so'm / oy (~$42)</div>
-      <div class="planLimits">1000 ta xabar/kun · 100 ta rasm/kun</div>
-      <button class="payBtn" onclick="notifyPayment('vip')">To'ladim</button>
+      <div class="planLimits" id="planVipLimits">1000 ta xabar/kun · 100 ta rasm/kun</div>
+      <button class="payBtn" id="payVipBtn" onclick="notifyPayment('vip')">To'ladim</button>
     </div>
 
-    <div class="payInfo">
+    <div class="payInfo" id="payInfoBox">
       To'lov qilish uchun quyidagi kartaga o'tkazma qiling:<br>
       💳 <b>4067 0700 0924 7748</b><br>
       👤 Dilnozaxon YULDASHEVA<br><br>
@@ -262,9 +224,10 @@
       <div class="logo">🤝</div>
       <div>
         <div class="title">Hamrohim</div>
-        <div class="subtitle">doim yoningda</div>
+        <div class="subtitle" id="headerSubtitle">doim yoningda</div>
       </div>
       <div id="headerRight">
+        <button id="langToggle">EN</button>
         <button id="accountBtn">?</button>
         <div id="accountMenu">
           <div class="email" id="menuEmail"></div>
@@ -288,13 +251,99 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_mUSWMxItoPWJ7enCs2o-cg_l6bs06pM';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const PLAN_NAMES = { free: '🆓 Bepul', premium: '💎 Premium', vip: '👑 VIP', admin: '⚡ Admin' };
+  const TEXTS = {
+    uz: {
+      subtitle: 'doim yoningda', placeholder: 'Xabar yoz...', send: 'Yubor',
+      kirishTitle: 'Kirish', signupTitle: "Ro'yxatdan o'tish",
+      authDesc: 'Hamrohim bilan suhbatni davom ettirish uchun tizimga kiring',
+      emailPh: 'Email', passwordPh: 'Parol',
+      kirishBtn: 'Kirish', signupBtn: "Ro'yxatdan o'tish",
+      noAccount: "Hisobingiz yo'qmi?", haveAccount: 'Hisobingiz bormi?',
+      newChat: '+ Yangi suhbat', welcome: "Salom! Men Hamrohim — sening shaxsiy AI do'sting. Nima haqida gaplashamiz?",
+      typing: 'Hamrohim yozmoqda...', errReply: "Kechirasan, javob bera olmadim.", errGeneric: 'Xatolik yuz berdi. Qayta urin.',
+      upgrade: 'Upgrade', logout: 'Chiqish',
+      tariffTitle: 'Tariflar', tariffDesc: "O'zingizga mos tarifni tanlang",
+      planFree: '🆓 Bepul', planFreePrice: "0 so'm", planFreeLimits: '25 ta xabar/kun · 7 ta rasm/kun',
+      planPremium: '💎 Premium', planPremiumLimits: '150 ta xabar/kun · 20 ta rasm/kun',
+      planVip: '👑 VIP', planVipLimits: '1000 ta xabar/kun · 100 ta rasm/kun',
+      payBtn: "To'ladim",
+      payInfo: `To'lov qilish uchun quyidagi kartaga o'tkazma qiling:<br>💳 <b>4067 0700 0924 7748</b><br>👤 Dilnozaxon YULDASHEVA<br><br>To'lovni amalga oshirgach, yuqoridagi "To'ladim" tugmasini bosing — administratorga avtomatik xabar yuboriladi.`,
+      payAlert: "So'rovingiz yuborildi! Tez orada tasdiqlanadi.", payErr: "Xatolik yuz berdi, qayta urinib ko'ring.",
+      planNames: { free: '🆓 Bepul', premium: '💎 Premium', vip: '👑 VIP', admin: '⚡ Admin' },
+      usageLabel: (m, ml, i, il) => `Xabar: ${m}/${ml} · Rasm: ${i}/${il}`
+    },
+    en: {
+      subtitle: 'always by your side', placeholder: 'Type a message...', send: 'Send',
+      kirishTitle: 'Sign in', signupTitle: 'Sign up',
+      authDesc: 'Sign in to continue chatting with Hamrohim',
+      emailPh: 'Email', passwordPh: 'Password',
+      kirishBtn: 'Sign in', signupBtn: 'Sign up',
+      noAccount: "Don't have an account?", haveAccount: 'Already have an account?',
+      newChat: '+ New chat', welcome: "Hi! I'm Hamrohim — your personal AI companion. What shall we talk about?",
+      typing: 'Hamrohim is typing...', errReply: "Sorry, I couldn't reply.", errGeneric: 'Something went wrong. Try again.',
+      upgrade: 'Upgrade', logout: 'Log out',
+      tariffTitle: 'Plans', tariffDesc: 'Choose the plan that fits you',
+      planFree: '🆓 Free', planFreePrice: '$0', planFreeLimits: '25 messages/day · 7 images/day',
+      planPremium: '💎 Premium', planPremiumLimits: '150 messages/day · 20 images/day',
+      planVip: '👑 VIP', planVipLimits: '1000 messages/day · 100 images/day',
+      payBtn: 'I paid',
+      payInfo: `Transfer the payment to this card:<br>💳 <b>4067 0700 0924 7748</b><br>👤 Dilnozaxon YULDASHEVA<br><br>After paying, click "I paid" above — the admin will be notified automatically.`,
+      payAlert: 'Your request has been sent! It will be confirmed soon.', payErr: 'Something went wrong, please try again.',
+      planNames: { free: '🆓 Free', premium: '💎 Premium', vip: '👑 VIP', admin: '⚡ Admin' },
+      usageLabel: (m, ml, i, il) => `Messages: ${m}/${ml} · Images: ${i}/${il}`
+    }
+  };
+
   const PLAN_LIMITS = {
     free: { messages: 25, images: 7 },
     premium: { messages: 150, images: 20 },
     vip: { messages: 1000, images: 100 },
     admin: { messages: 999999, images: 999999 }
   };
+
+  let currentLang = localStorage.getItem('hamrohim_lang') || 'uz';
+
+  function applyLanguage() {
+    const t = TEXTS[currentLang];
+    document.getElementById('headerSubtitle').textContent = t.subtitle;
+    inputEl.placeholder = t.placeholder;
+    sendBtn.textContent = t.send;
+    newChatBtn.textContent = t.newChat;
+    upgradeBtn.textContent = t.upgrade;
+    logoutBtn.textContent = t.logout;
+    document.getElementById('langToggle').textContent = currentLang === 'uz' ? 'EN' : "UZ";
+    document.getElementById('authLangToggle').textContent = currentLang === 'uz' ? 'EN' : 'UZ';
+
+    authTitle.textContent = isSignUpMode ? t.signupTitle : t.kirishTitle;
+    document.getElementById('authDesc').textContent = t.authDesc;
+    authEmail.placeholder = t.emailPh;
+    authPassword.placeholder = t.passwordPh;
+    authSubmitBtn.textContent = isSignUpMode ? t.signupBtn : t.kirishBtn;
+    switchText.textContent = isSignUpMode ? t.haveAccount : t.noAccount;
+    switchLink.textContent = isSignUpMode ? t.kirishBtn : t.signupBtn;
+
+    document.getElementById('tariffTitle').textContent = t.tariffTitle;
+    document.getElementById('tariffDesc').textContent = t.tariffDesc;
+    document.getElementById('planFreeName').textContent = t.planFree;
+    document.getElementById('planFreePrice').textContent = t.planFreePrice;
+    document.getElementById('planFreeLimits').textContent = t.planFreeLimits;
+    document.getElementById('planPremiumName').textContent = t.planPremium;
+    document.getElementById('planPremiumLimits').textContent = t.planPremiumLimits;
+    document.getElementById('planVipName').textContent = t.planVip;
+    document.getElementById('planVipLimits').textContent = t.planVipLimits;
+    document.getElementById('payPremiumBtn').textContent = t.payBtn;
+    document.getElementById('payVipBtn').textContent = t.payBtn;
+    document.getElementById('payInfoBox').innerHTML = t.payInfo;
+
+    if (userProfile) renderAccountInfo();
+    if (history.length === 0) renderMessages();
+  }
+
+  function toggleLanguage() {
+    currentLang = currentLang === 'uz' ? 'en' : 'uz';
+    localStorage.setItem('hamrohim_lang', currentLang);
+    applyLanguage();
+  }
 
   let currentSession = null;
   let userProfile = null;
@@ -319,20 +368,20 @@
   const tariffModal = document.getElementById('tariffModal');
   const closeTariffBtn = document.getElementById('closeTariffBtn');
 
+  document.getElementById('langToggle').addEventListener('click', toggleLanguage);
+  document.getElementById('authLangToggle').addEventListener('click', toggleLanguage);
+
   switchLink.addEventListener('click', () => {
     isSignUpMode = !isSignUpMode;
-    authTitle.textContent = isSignUpMode ? "Ro'yxatdan o'tish" : 'Kirish';
-    authSubmitBtn.textContent = isSignUpMode ? "Ro'yxatdan o'tish" : 'Kirish';
-    switchText.textContent = isSignUpMode ? 'Hisobingiz bormi?' : "Hisobingiz yo'qmi?";
-    switchLink.textContent = isSignUpMode ? 'Kirish' : "Ro'yxatdan o'tish";
     authError.textContent = '';
+    applyLanguage();
   });
 
   authSubmitBtn.addEventListener('click', async () => {
     const email = authEmail.value.trim();
     const password = authPassword.value;
     if (!email || !password) {
-      authError.textContent = 'Email va parolni kiriting';
+      authError.textContent = currentLang === 'uz' ? 'Email va parolni kiriting' : 'Enter email and password';
       return;
     }
     authSubmitBtn.disabled = true;
@@ -345,7 +394,7 @@
           currentSession = data.session;
           await afterLogin();
         } else {
-          authError.textContent = "Ro'yxatdan o'tdingiz! Emailingizni tasdiqlab, keyin kiring.";
+          authError.textContent = currentLang === 'uz' ? "Ro'yxatdan o'tdingiz! Emailingizni tasdiqlab, keyin kiring." : 'Signed up! Please confirm your email, then log in.';
         }
       } else {
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -354,7 +403,7 @@
         await afterLogin();
       }
     } catch (e) {
-      authError.textContent = e.message || 'Xatolik yuz berdi';
+      authError.textContent = e.message || (currentLang === 'uz' ? 'Xatolik yuz berdi' : 'Something went wrong');
     } finally {
       authSubmitBtn.disabled = false;
     }
@@ -379,15 +428,12 @@
     try {
       await fetch('/api/notify-payment', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentSession.access_token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession.access_token}` },
         body: JSON.stringify({ plan })
       });
-      alert("So'rovingiz yuborildi! Tez orada tasdiqlanadi.");
+      alert(TEXTS[currentLang].payAlert);
     } catch (e) {
-      alert("Xatolik yuz berdi, qayta urinib ko'ring.");
+      alert(TEXTS[currentLang].payErr);
     } finally {
       btns.forEach(b => b.disabled = false);
     }
@@ -395,10 +441,7 @@
 
   async function loadProfile() {
     const { data, error } = await supabaseClient
-      .from('user_profiles')
-      .select('*')
-      .eq('id', currentSession.user.id)
-      .single();
+      .from('user_profiles').select('*').eq('id', currentSession.user.id).single();
     if (error) { console.error(error); return; }
     userProfile = data;
 
@@ -416,10 +459,11 @@
 
   function renderAccountInfo() {
     if (!userProfile) return;
+    const t = TEXTS[currentLang];
     const limits = PLAN_LIMITS[userProfile.plan] || PLAN_LIMITS.free;
     menuEmail.textContent = currentSession.user.email;
-    menuPlan.textContent = PLAN_NAMES[userProfile.plan] || PLAN_NAMES.free;
-    menuUsage.textContent = `Xabar: ${userProfile.messages_used_today}/${limits.messages} · Rasm: ${userProfile.images_used_today}/${limits.images}`;
+    menuPlan.textContent = t.planNames[userProfile.plan] || t.planNames.free;
+    menuUsage.textContent = t.usageLabel(userProfile.messages_used_today, limits.messages, userProfile.images_used_today, limits.images);
     accountBtn.textContent = (currentSession.user.email[0] || '?').toUpperCase();
   }
 
@@ -448,25 +492,13 @@
   const historyList = document.getElementById('historyList');
   const overlay = document.getElementById('overlay');
 
-  const WELCOME = "Salom! Men Hamrohim — sening shaxsiy AI do'sting. Nima haqida gaplashamiz?";
-
   let allChats = JSON.parse(localStorage.getItem('hamrohim_chats') || '[]');
   let currentChatId = null;
   let history = [];
 
-  function saveChats() {
-    localStorage.setItem('hamrohim_chats', JSON.stringify(allChats));
-  }
-
-  function closeSidebar() {
-    sidebar.classList.add('hidden');
-    overlay.classList.remove('show');
-  }
-
-  function toggleSidebar() {
-    sidebar.classList.toggle('hidden');
-    overlay.classList.toggle('show');
-  }
+  function saveChats() { localStorage.setItem('hamrohim_chats', JSON.stringify(allChats)); }
+  function closeSidebar() { sidebar.classList.add('hidden'); overlay.classList.remove('show'); }
+  function toggleSidebar() { sidebar.classList.toggle('hidden'); overlay.classList.toggle('show'); }
 
   function renderHistory() {
     historyList.innerHTML = '';
@@ -474,13 +506,10 @@
       const item = document.createElement('div');
       item.className = 'history-item' + (chat.id === currentChatId ? ' active' : '');
       const titleSpan = document.createElement('span');
-      titleSpan.textContent = chat.title || 'Yangi suhbat';
-      titleSpan.style.overflow = 'hidden';
-      titleSpan.style.textOverflow = 'ellipsis';
-      titleSpan.style.whiteSpace = 'nowrap';
+      titleSpan.textContent = chat.title || (currentLang === 'uz' ? 'Yangi suhbat' : 'New chat');
+      titleSpan.style.overflow = 'hidden'; titleSpan.style.textOverflow = 'ellipsis'; titleSpan.style.whiteSpace = 'nowrap';
       const delSpan = document.createElement('span');
-      delSpan.className = 'del';
-      delSpan.textContent = '✕';
+      delSpan.className = 'del'; delSpan.textContent = '✕';
       delSpan.addEventListener('click', (e) => {
         e.stopPropagation();
         allChats = allChats.filter(c => c.id !== chat.id);
@@ -488,12 +517,8 @@
         if (chat.id === currentChatId) startNewChat();
         else renderHistory();
       });
-      item.appendChild(titleSpan);
-      item.appendChild(delSpan);
-      item.addEventListener('click', () => {
-        loadChat(chat.id);
-        closeSidebar();
-      });
+      item.appendChild(titleSpan); item.appendChild(delSpan);
+      item.addEventListener('click', () => { loadChat(chat.id); closeSidebar(); });
       historyList.appendChild(item);
     });
   }
@@ -501,7 +526,7 @@
   function renderMessages() {
     messagesEl.innerHTML = '';
     if (history.length === 0) {
-      addMessageToDOM('assistant', WELCOME);
+      addMessageToDOM('assistant', TEXTS[currentLang].welcome);
     } else {
       history.forEach(m => {
         const isImg = m.role === 'assistant' && typeof m.content === 'string' && m.content.startsWith('https://image.pollinations.ai/');
@@ -516,14 +541,9 @@
     div.className = 'msg ' + role;
     if (isImage) {
       const img = document.createElement('img');
-      img.src = text;
-      img.style.maxWidth = '100%';
-      img.style.borderRadius = '12px';
-      img.style.display = 'block';
+      img.src = text; img.style.maxWidth = '100%'; img.style.borderRadius = '12px'; img.style.display = 'block';
       div.appendChild(img);
-    } else {
-      div.textContent = text;
-    }
+    } else { div.textContent = text; }
     messagesEl.appendChild(div);
     return div;
   }
@@ -531,18 +551,14 @@
   function startNewChat() {
     currentChatId = 'chat_' + Date.now();
     history = [];
-    renderMessages();
-    renderHistory();
-    closeSidebar();
+    renderMessages(); renderHistory(); closeSidebar();
   }
 
   function loadChat(id) {
     const chat = allChats.find(c => c.id === id);
     if (!chat) return;
-    currentChatId = id;
-    history = chat.messages;
-    renderMessages();
-    renderHistory();
+    currentChatId = id; history = chat.messages;
+    renderMessages(); renderHistory();
   }
 
   function persistCurrentChat(firstUserText) {
@@ -550,17 +566,13 @@
     if (!chat) {
       chat = { id: currentChatId, title: firstUserText.slice(0, 30), messages: history };
       allChats.push(chat);
-    } else {
-      chat.messages = history;
-    }
-    saveChats();
-    renderHistory();
+    } else { chat.messages = history; }
+    saveChats(); renderHistory();
   }
 
   async function sendMessage() {
     const text = inputEl.value.trim();
-    if (!text) return;
-    if (!currentSession) return;
+    if (!text || !currentSession) return;
     inputEl.value = '';
 
     const isFirstMessage = history.length === 0;
@@ -570,17 +582,14 @@
     history.push({ role: 'user', content: text });
     messagesEl.scrollTop = messagesEl.scrollHeight;
     sendBtn.disabled = true;
-    const loadingEl = addMessageToDOM('assistant', 'Hamrohim yozmoqda...');
+    const loadingEl = addMessageToDOM('assistant', TEXTS[currentLang].typing);
     messagesEl.scrollTop = messagesEl.scrollHeight;
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentSession.access_token}`
-        },
-        body: JSON.stringify({ messages: history })
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession.access_token}` },
+        body: JSON.stringify({ messages: history, lang: currentLang })
       });
       const data = await res.json();
 
@@ -589,7 +598,6 @@
         authModal.classList.remove('hidden');
         return;
       }
-
       if (data.type === 'limit') {
         loadingEl.textContent = data.reply;
         tariffModal.classList.add('show');
@@ -598,13 +606,13 @@
         addMessageToDOM('assistant', data.reply, true);
         history.push({ role: 'assistant', content: data.reply });
       } else {
-        loadingEl.textContent = data.reply || "Kechirasan, javob bera olmadim.";
+        loadingEl.textContent = data.reply || TEXTS[currentLang].errReply;
         history.push({ role: 'assistant', content: data.reply || '' });
       }
       persistCurrentChat(text);
       await loadProfile();
     } catch (e) {
-      loadingEl.textContent = "Xatolik yuz berdi. Qayta urin.";
+      loadingEl.textContent = TEXTS[currentLang].errGeneric;
     } finally {
       sendBtn.disabled = false;
       messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -613,16 +621,14 @@
 
   sendBtn.addEventListener('click', sendMessage);
   inputEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
   menuBtn.addEventListener('click', toggleSidebar);
   overlay.addEventListener('click', closeSidebar);
   newChatBtn.addEventListener('click', startNewChat);
 
   if (window.innerWidth > 640) sidebar.classList.remove('hidden');
+  applyLanguage();
   initAuth();
 </script>
 </body>
