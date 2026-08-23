@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { messages, lang } = req.body;
+  const { messages, lang, image } = req.body;
   const isEnglish = lang === 'en';
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace('Bearer ', '');
@@ -77,6 +77,43 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Agar rasm biriktirilgan bo'lsa — vision model orqali tahlil qilamiz
+    if (image) {
+      if (profile.images_used_today >= limits.images) {
+        return res.status(200).json({
+          type: 'limit', limitType: 'image',
+          reply: isEnglish ? "Your daily image limit is over." : "Bugungi rasm limitingiz tugadi."
+        });
+      }
+      const lastText = messages[messages.length - 1]?.content || (isEnglish ? "What is in this image?" : "Bu rasmda nima bor?");
+      const visionRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: lastText },
+                { type: 'image_url', image_url: { url: image } }
+              ]
+            }
+          ]
+        })
+      });
+      const visionData = await visionRes.json();
+      if (!visionRes.ok) {
+        console.error('Vision xatosi:', visionData);
+        return res.status(500).json({ error: visionData.error?.message || 'Vision xatosi' });
+      }
+      const visionReply = visionData.choices?.[0]?.message?.content || (isEnglish ? "Sorry, I couldn't analyze the image." : "Kechirasan, rasmni tahlil qilolmadim.");
+      await incrementUsage('images_used_today');
+      return res.status(200).json({ reply: visionReply, type: 'text' });
+    }
+
+    // Rasm yaratish so'rovi ekanligini aniqlaymiz
     const intentRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
