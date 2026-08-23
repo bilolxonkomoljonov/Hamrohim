@@ -287,6 +287,7 @@
     free: { messages: 25, images: 7 },
     premium: { messages: 150, images: 20 },
     vip: { messages: 1000, images: 100 }
+   ,admin: { messages: 999999, images: 999999 }
   };
 
   let currentSession = null;
