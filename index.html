@@ -130,7 +130,6 @@
   }
   button.send:disabled { background: rgba(224,164,88,0.3); cursor: default; }
 
-  /* AUTH MODAL */
   #authModal {
     position: fixed; inset: 0; background: #0d1321;
     display: flex; align-items: center; justify-content: center; z-index: 100;
@@ -157,7 +156,6 @@
   .authBox .switch a { color: #e0a458; cursor: pointer; text-decoration: underline; }
   .authBox .errMsg { color: #ff8080; font-size: 13px; margin-top: 8px; min-height: 16px; }
 
-  /* TARIFF MODAL */
   #tariffModal {
     position: fixed; inset: 0; background: rgba(0,0,0,0.6);
     display: none; align-items: center; justify-content: center; z-index: 100;
@@ -186,6 +184,12 @@
     border-radius: 12px; font-size: 13px; line-height: 1.6;
   }
   .payInfo b { color: #e0a458; }
+  .payBtn {
+    margin-top: 10px; width: 100%; padding: 9px; border-radius: 10px;
+    border: none; background: linear-gradient(135deg, #e0a458, #c97b3c);
+    color: #1a1206; font-weight: 700; font-size: 13.5px; cursor: pointer;
+  }
+  .payBtn:disabled { opacity: 0.5; cursor: default; }
 
   @media (min-width: 641px) {
     #sidebar { position: relative; }
@@ -227,19 +231,21 @@
       <div class="planName">💎 Premium</div>
       <div class="planPrice">300 000 so'm / oy (~$25)</div>
       <div class="planLimits">150 ta xabar/kun · 20 ta rasm/kun</div>
+      <button class="payBtn" onclick="notifyPayment('premium')">To'ladim</button>
     </div>
 
     <div class="planCard highlight">
       <div class="planName">👑 VIP</div>
       <div class="planPrice">500 000 so'm / oy (~$42)</div>
       <div class="planLimits">1000 ta xabar/kun · 100 ta rasm/kun</div>
+      <button class="payBtn" onclick="notifyPayment('vip')">To'ladim</button>
     </div>
 
     <div class="payInfo">
       To'lov qilish uchun quyidagi kartaga o'tkazma qiling:<br>
       💳 <b>4067 0700 0924 7748</b><br>
       👤 Dilnozaxon YULDASHEVA<br><br>
-      To'lovni amalga oshirgach, chekni va emailingizni <b>@bilolxon_201409</b> ga Telegram orqali yuboring — tarifingiz tez orada faollashtiriladi.
+      To'lovni amalga oshirgach, yuqoridagi "To'ladim" tugmasini bosing — administratorga avtomatik xabar yuboriladi.
     </div>
   </div>
 </div>
@@ -365,6 +371,27 @@
   });
   closeTariffBtn.addEventListener('click', () => tariffModal.classList.remove('show'));
 
+  async function notifyPayment(plan) {
+    if (!currentSession) return;
+    const btns = document.querySelectorAll('.payBtn');
+    btns.forEach(b => b.disabled = true);
+    try {
+      await fetch('/api/notify-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentSession.access_token}`
+        },
+        body: JSON.stringify({ plan })
+      });
+      alert("So'rovingiz yuborildi! Tez orada tasdiqlanadi.");
+    } catch (e) {
+      alert("Xatolik yuz berdi, qayta urinib ko'ring.");
+    } finally {
+      btns.forEach(b => b.disabled = false);
+    }
+  }
+
   async function loadProfile() {
     const { data, error } = await supabaseClient
       .from('user_profiles')
@@ -411,7 +438,6 @@
     }
   }
 
-  // ---- CHAT LOGIC ----
   const messagesEl = document.getElementById('messages');
   const inputEl = document.getElementById('input');
   const sendBtn = document.getElementById('sendBtn');
