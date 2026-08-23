@@ -1,603 +1,145 @@
-<!DOCTYPE html>
-<html lang="uz">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hamrohim</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    min-height: 100vh;
-    background: radial-gradient(circle at 20% 0%, #1c2541 0%, #0d1321 55%, #080b14 100%);
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    color: #f2ede4;
-    display: flex;
-  }
-  #app { display: flex; width: 100%; height: 100vh; position: relative; }
-
-  #overlay {
-    display: none;
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 15;
-  }
-  #overlay.show { display: block; }
-
-  #sidebar {
-    width: 260px; background: #10162a;
-    border-right: 1px solid rgba(242,237,228,0.12);
-    display: flex; flex-direction: column;
-    transition: margin-left 0.25s ease;
-    position: fixed; top: 0; left: 0; height: 100vh; z-index: 20;
-  }
-  #sidebar.hidden { margin-left: -260px; }
-  #newChatBtn {
-    margin: 14px; padding: 10px; border-radius: 12px;
-    background: linear-gradient(135deg, #e0a458, #c97b3c);
-    color: #1a1206; font-weight: 700; border: none; cursor: pointer; font-size: 14px;
-  }
-  #historyList { flex: 1; overflow-y: auto; padding: 0 10px; }
-  .history-item {
-    padding: 10px 12px; margin-bottom: 6px; border-radius: 10px;
-    background: rgba(242,237,228,0.06); font-size: 13.5px; cursor: pointer;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    display: flex; justify-content: space-between; align-items: center; gap: 6px;
-  }
-  .history-item:hover { background: rgba(242,237,228,0.13); }
-  .history-item.active { background: rgba(224,164,88,0.25); }
-  .history-item .del { opacity: 0.5; font-size: 12px; flex-shrink: 0; }
-  .history-item .del:hover { opacity: 1; }
-
-  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; width: 100%; }
-  header {
-    padding: 18px 20px; border-bottom: 1px solid rgba(242,237,228,0.12);
-    display: flex; align-items: center; gap: 14px;
-  }
-  #menuBtn {
-    background: none; border: none; color: #f2ede4; font-size: 22px;
-    cursor: pointer; padding: 4px 8px;
-  }
-  .logo {
-    width: 42px; height: 42px; border-radius: 50%;
-    background: linear-gradient(135deg, #e0a458 0%, #c97b3c 100%);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; flex-shrink: 0;
-    box-shadow: 0 0 18px rgba(224,164,88,0.35);
-  }
-  .title { font-size: 20px; font-weight: 700; }
-  .subtitle { font-size: 12.5px; color: rgba(242,237,228,0.55); }
-  #headerRight { margin-left: auto; position: relative; }
-  #accountBtn {
-    width: 38px; height: 38px; border-radius: 50%;
-    background: linear-gradient(135deg, #6b7cff, #4a5bcc);
-    border: none; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer;
-  }
-  #accountMenu {
-    display: none;
-    position: absolute; top: 46px; right: 0; width: 230px;
-    background: #171d33; border: 1px solid rgba(242,237,228,0.15);
-    border-radius: 14px; padding: 12px; z-index: 30;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  }
-  #accountMenu.show { display: block; }
-  #accountMenu .email { font-size: 12.5px; color: rgba(242,237,228,0.6); word-break: break-all; margin-bottom: 8px; }
-  #accountMenu .planline { font-size: 13.5px; margin-bottom: 4px; font-weight: 700; }
-  #accountMenu .usageline { font-size: 12px; color: rgba(242,237,228,0.55); margin-bottom: 10px; }
-  #upgradeBtn {
-    width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #fff;
-    background: transparent; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer;
-    margin-bottom: 8px;
-  }
-  #logoutBtn {
-    width: 100%; padding: 9px; border-radius: 10px; border: none;
-    background: rgba(242,237,228,0.08); color: #f2ede4; font-size: 13.5px; cursor: pointer;
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  #messages {
-    flex: 1; overflow-y: auto; padding: 24px 16px;
-    display: flex; flex-direction: column; gap: 14px;
-  }
-  .msg {
-    max-width: 78%; padding: 12px 16px; font-size: 15.5px; line-height: 1.5;
-    border-radius: 18px;
-  }
-  .msg.user {
-    align-self: flex-end;
-    background: linear-gradient(135deg, #e0a458, #c97b3c);
-    color: #1a1206;
-    border-radius: 18px 18px 4px 18px;
-  }
-  .msg.assistant {
-    align-self: flex-start;
-    background: rgba(242,237,228,0.08);
-    border: 1px solid rgba(242,237,228,0.1);
-    border-radius: 18px 18px 18px 4px;
-  }
-  #inputbar {
-    padding: 16px; border-top: 1px solid rgba(242,237,228,0.12);
-    display: flex; gap: 10px;
-  }
-  textarea {
-    flex: 1; resize: none; background: rgba(242,237,228,0.06);
-    border: 1px solid rgba(242,237,228,0.18); border-radius: 14px;
-    padding: 12px 14px; color: #f2ede4; font-size: 15px; outline: none;
-    font-family: inherit;
-  }
-  button.send {
-    background: linear-gradient(135deg, #e0a458, #c97b3c);
-    border: none; border-radius: 14px; padding: 0 20px;
-    color: #1a1206; font-weight: 700; font-size: 15px; cursor: pointer;
-  }
-  button.send:disabled { background: rgba(224,164,88,0.3); cursor: default; }
+  const { messages, lang } = req.body;
+  const isEnglish = lang === 'en';
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace('Bearer ', '');
 
-  /* AUTH MODAL */
-  #authModal {
-    position: fixed; inset: 0; background: #0d1321;
-    display: flex; align-items: center; justify-content: center; z-index: 100;
-    padding: 20px;
-  }
-  #authModal.hidden { display: none; }
-  .authBox {
-    width: 100%; max-width: 360px; background: #171d33;
-    border-radius: 18px; padding: 28px 24px; text-align: center;
-  }
-  .authBox h2 { margin: 0 0 6px; font-size: 22px; }
-  .authBox p { margin: 0 0 20px; font-size: 13px; color: rgba(242,237,228,0.55); }
-  .authBox input {
-    width: 100%; padding: 12px 14px; margin-bottom: 10px;
-    background: rgba(242,237,228,0.06); border: 1px solid rgba(242,237,228,0.18);
-    border-radius: 12px; color: #f2ede4; font-size: 15px; outline: none;
-  }
-  .authBox button.primary {
-    width: 100%; padding: 12px; border: none; border-radius: 12px;
-    background: linear-gradient(135deg, #e0a458, #c97b3c);
-    color: #1a1206; font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 6px;
-  }
-  .authBox .switch { margin-top: 14px; font-size: 13px; color: rgba(242,237,228,0.6); }
-  .authBox .switch a { color: #e0a458; cursor: pointer; text-decoration: underline; }
-  .authBox .errMsg { color: #ff8080; font-size: 13px; margin-top: 8px; min-height: 16px; }
-
-  /* TARIFF MODAL */
-  #tariffModal {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-    display: none; align-items: center; justify-content: center; z-index: 100;
-    padding: 16px; overflow-y: auto;
-  }
-  #tariffModal.show { display: flex; }
-  .tariffBox {
-    width: 100%; max-width: 420px; background: #171d33;
-    border-radius: 18px; padding: 24px; position: relative;
-  }
-  .tariffBox h2 { margin: 0 0 4px; font-size: 20px; }
-  .tariffBox .closeBtn {
-    position: absolute; top: 16px; right: 16px; background: none; border: none;
-    color: #f2ede4; font-size: 20px; cursor: pointer;
-  }
-  .planCard {
-    border: 1px solid rgba(242,237,228,0.15); border-radius: 14px;
-    padding: 14px 16px; margin-top: 14px;
-  }
-  .planCard.highlight { border-color: #e0a458; background: rgba(224,164,88,0.08); }
-  .planCard .planName { font-weight: 700; font-size: 16px; margin-bottom: 2px; }
-  .planCard .planPrice { font-size: 13.5px; color: #e0a458; margin-bottom: 6px; }
-  .planCard .planLimits { font-size: 12.5px; color: rgba(242,237,228,0.6); }
-  .payInfo {
-    margin-top: 18px; padding: 14px; background: rgba(242,237,228,0.06);
-    border-radius: 12px; font-size: 13px; line-height: 1.6;
-  }
-  .payInfo b { color: #e0a458; }
-
-  @media (min-width: 641px) {
-    #sidebar { position: relative; }
-    #overlay { display: none !important; }
-  }
-</style>
-</head>
-<body>
-
-<div id="authModal">
-  <div class="authBox">
-    <div class="logo" style="margin: 0 auto 14px;">🤝</div>
-    <h2 id="authTitle">Kirish</h2>
-    <p>Hamrohim bilan suhbatni davom ettirish uchun tizimga kiring</p>
-    <input type="email" id="authEmail" placeholder="Email" />
-    <input type="password" id="authPassword" placeholder="Parol" />
-    <button class="primary" id="authSubmitBtn">Kirish</button>
-    <div class="errMsg" id="authError"></div>
-    <div class="switch">
-      <span id="switchText">Hisobingiz yo'qmi?</span>
-      <a id="switchLink">Ro'yxatdan o'tish</a>
-    </div>
-  </div>
-</div>
-
-<div id="tariffModal">
-  <div class="tariffBox">
-    <button class="closeBtn" id="closeTariffBtn">✕</button>
-    <h2>Tariflar</h2>
-    <p style="font-size:13px; color:rgba(242,237,228,0.55); margin:4px 0 0;">O'zingizga mos tarifni tanlang</p>
-
-    <div class="planCard">
-      <div class="planName">🆓 Bepul</div>
-      <div class="planPrice">0 so'm</div>
-      <div class="planLimits">25 ta xabar/kun · 7 ta rasm/kun</div>
-    </div>
-
-    <div class="planCard highlight">
-      <div class="planName">💎 Premium</div>
-      <div class="planPrice">300 000 so'm / oy (~$25)</div>
-      <div class="planLimits">150 ta xabar/kun · 20 ta rasm/kun</div>
-    </div>
-
-    <div class="planCard highlight">
-      <div class="planName">👑 VIP</div>
-      <div class="planPrice">500 000 so'm / oy (~$42)</div>
-      <div class="planLimits">1000 ta xabar/kun · 100 ta rasm/kun</div>
-    </div>
-
-    <div class="payInfo">
-      To'lov qilish uchun quyidagi kartaga o'tkazma qiling:<br>
-      💳 <b>4067 0700 0924 7748</b><br>
-      👤 Dilnozaxon YULDASHEVA<br><br>
-      To'lovni amalga oshirgach, chekni va emailingizni <b>@bilolxon_201409</b> ga Telegram orqali yuboring — tarifingiz tez orada faollashtiriladi.
-    </div>
-  </div>
-</div>
-
-<div id="app">
-  <div id="overlay"></div>
-  <div id="sidebar" class="hidden">
-    <button id="newChatBtn">+ Yangi suhbat</button>
-    <div id="historyList"></div>
-  </div>
-  <div id="main">
-    <header>
-      <button id="menuBtn">☰</button>
-      <div class="logo">🤝</div>
-      <div>
-        <div class="title">Hamrohim</div>
-        <div class="subtitle">doim yoningda</div>
-      </div>
-      <div id="headerRight">
-        <button id="accountBtn">?</button>
-        <div id="accountMenu">
-          <div class="email" id="menuEmail"></div>
-          <div class="planline" id="menuPlan"></div>
-          <div class="usageline" id="menuUsage"></div>
-          <button id="upgradeBtn">Upgrade</button>
-          <button id="logoutBtn">Chiqish</button>
-        </div>
-      </div>
-    </header>
-    <div id="messages"></div>
-    <div id="inputbar">
-      <textarea id="input" rows="1" placeholder="Xabar yoz..."></textarea>
-      <button class="send" id="sendBtn">Yubor</button>
-    </div>
-  </div>
-</div>
-
-<script>
-  const SUPABASE_URL = 'https://azochkxsehllwrhysafm.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_mUSWMxItoPWJ7enCs2o-cg_l6bs06pM';
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  const PLAN_NAMES = { free: '🆓 Bepul', premium: '💎 Premium', vip: '👑 VIP' };
-  const PLAN_LIMITS = {
-    free: { messages: 25, images: 7 },
-    premium: { messages: 150, images: 20 },
-    vip: { messages: 1000, images: 100 }
-   ,admin: { messages: 999999, images: 999999 }
-  };
-
-  let currentSession = null;
-  let userProfile = null;
-  let isSignUpMode = false;
-
-  const authModal = document.getElementById('authModal');
-  const authEmail = document.getElementById('authEmail');
-  const authPassword = document.getElementById('authPassword');
-  const authSubmitBtn = document.getElementById('authSubmitBtn');
-  const authError = document.getElementById('authError');
-  const authTitle = document.getElementById('authTitle');
-  const switchText = document.getElementById('switchText');
-  const switchLink = document.getElementById('switchLink');
-
-  const accountBtn = document.getElementById('accountBtn');
-  const accountMenu = document.getElementById('accountMenu');
-  const menuEmail = document.getElementById('menuEmail');
-  const menuPlan = document.getElementById('menuPlan');
-  const menuUsage = document.getElementById('menuUsage');
-  const upgradeBtn = document.getElementById('upgradeBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-  const tariffModal = document.getElementById('tariffModal');
-  const closeTariffBtn = document.getElementById('closeTariffBtn');
-
-  switchLink.addEventListener('click', () => {
-    isSignUpMode = !isSignUpMode;
-    authTitle.textContent = isSignUpMode ? "Ro'yxatdan o'tish" : 'Kirish';
-    authSubmitBtn.textContent = isSignUpMode ? "Ro'yxatdan o'tish" : 'Kirish';
-    switchText.textContent = isSignUpMode ? 'Hisobingiz bormi?' : "Hisobingiz yo'qmi?";
-    switchLink.textContent = isSignUpMode ? 'Kirish' : "Ro'yxatdan o'tish";
-    authError.textContent = '';
-  });
-
-  authSubmitBtn.addEventListener('click', async () => {
-    const email = authEmail.value.trim();
-    const password = authPassword.value;
-    if (!email || !password) {
-      authError.textContent = 'Email va parolni kiriting';
-      return;
-    }
-    authSubmitBtn.disabled = true;
-    authError.textContent = '';
-    try {
-      if (isSignUpMode) {
-        const { data, error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) throw error;
-        if (data.session) {
-          currentSession = data.session;
-          await afterLogin();
-        } else {
-          authError.textContent = "Ro'yxatdan o'tdingiz! Emailingizni tasdiqlab, keyin kiring.";
-        }
-      } else {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        currentSession = data.session;
-        await afterLogin();
-      }
-    } catch (e) {
-      authError.textContent = e.message || 'Xatolik yuz berdi';
-    } finally {
-      authSubmitBtn.disabled = false;
-    }
-  });
-
-  logoutBtn.addEventListener('click', async () => {
-    await supabaseClient.auth.signOut();
-    location.reload();
-  });
-
-  accountBtn.addEventListener('click', () => accountMenu.classList.toggle('show'));
-  upgradeBtn.addEventListener('click', () => {
-    accountMenu.classList.remove('show');
-    tariffModal.classList.add('show');
-  });
-  closeTariffBtn.addEventListener('click', () => tariffModal.classList.remove('show'));
-
-  async function loadProfile() {
-    const { data, error } = await supabaseClient
-      .from('user_profiles')
-      .select('*')
-      .eq('id', currentSession.user.id)
-      .single();
-    if (error) { console.error(error); return; }
-    userProfile = data;
-
-    const today = new Date().toISOString().slice(0, 10);
-    if (userProfile.last_reset_date !== today) {
-      await supabaseClient.from('user_profiles').update({
-        messages_used_today: 0, images_used_today: 0, last_reset_date: today
-      }).eq('id', currentSession.user.id);
-      userProfile.messages_used_today = 0;
-      userProfile.images_used_today = 0;
-      userProfile.last_reset_date = today;
-    }
-    renderAccountInfo();
+  if (!token) {
+    return res.status(401).json({ error: 'Auth required', type: 'auth_required' });
   }
 
-  function renderAccountInfo() {
-    if (!userProfile) return;
-    const limits = PLAN_LIMITS[userProfile.plan] || PLAN_LIMITS.free;
-    menuEmail.textContent = currentSession.user.email;
-    menuPlan.textContent = PLAN_NAMES[userProfile.plan] || PLAN_NAMES.free;
-    menuUsage.textContent = `Xabar: ${userProfile.messages_used_today}/${limits.messages} · Rasm: ${userProfile.images_used_today}/${limits.images}`;
-    accountBtn.textContent = (currentSession.user.email[0] || '?').toUpperCase();
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+  let user;
+  try {
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }
+    });
+    if (!userRes.ok) return res.status(401).json({ error: 'Session expired', type: 'auth_required' });
+    user = await userRes.json();
+  } catch (e) {
+    return res.status(500).json({ error: 'Auth error' });
   }
 
-  async function afterLogin() {
-    authModal.classList.add('hidden');
-    await loadProfile();
-    startNewChat();
+  let profile;
+  try {
+    const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${user.id}&select=*`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }
+    });
+    const profiles = await profileRes.json();
+    profile = profiles[0];
+    if (!profile) return res.status(404).json({ error: 'Profile not found' });
+  } catch (e) {
+    return res.status(500).json({ error: 'Profile fetch error' });
   }
 
-  async function initAuth() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
-      currentSession = session;
-      await afterLogin();
-    } else {
-      authModal.classList.remove('hidden');
-    }
-  }
-
-  // ---- CHAT LOGIC ----
-  const messagesEl = document.getElementById('messages');
-  const inputEl = document.getElementById('input');
-  const sendBtn = document.getElementById('sendBtn');
-  const sidebar = document.getElementById('sidebar');
-  const menuBtn = document.getElementById('menuBtn');
-  const newChatBtn = document.getElementById('newChatBtn');
-  const historyList = document.getElementById('historyList');
-  const overlay = document.getElementById('overlay');
-
-  const WELCOME = "Salom! Men Hamrohim — sening shaxsiy AI do'sting. Nima haqida gaplashamiz?";
-
-  let allChats = JSON.parse(localStorage.getItem('hamrohim_chats') || '[]');
-  let currentChatId = null;
-  let history = [];
-
-  function saveChats() {
-    localStorage.setItem('hamrohim_chats', JSON.stringify(allChats));
-  }
-
-  function closeSidebar() {
-    sidebar.classList.add('hidden');
-    overlay.classList.remove('show');
-  }
-
-  function toggleSidebar() {
-    sidebar.classList.toggle('hidden');
-    overlay.classList.toggle('show');
-  }
-
-  function renderHistory() {
-    historyList.innerHTML = '';
-    allChats.slice().reverse().forEach(chat => {
-      const item = document.createElement('div');
-      item.className = 'history-item' + (chat.id === currentChatId ? ' active' : '');
-      const titleSpan = document.createElement('span');
-      titleSpan.textContent = chat.title || 'Yangi suhbat';
-      titleSpan.style.overflow = 'hidden';
-      titleSpan.style.textOverflow = 'ellipsis';
-      titleSpan.style.whiteSpace = 'nowrap';
-      const delSpan = document.createElement('span');
-      delSpan.className = 'del';
-      delSpan.textContent = '✕';
-      delSpan.addEventListener('click', (e) => {
-        e.stopPropagation();
-        allChats = allChats.filter(c => c.id !== chat.id);
-        saveChats();
-        if (chat.id === currentChatId) startNewChat();
-        else renderHistory();
-      });
-      item.appendChild(titleSpan);
-      item.appendChild(delSpan);
-      item.addEventListener('click', () => {
-        loadChat(chat.id);
-        closeSidebar();
-      });
-      historyList.appendChild(item);
+  const today = new Date().toISOString().slice(0, 10);
+  if (profile.last_reset_date !== today) {
+    profile.messages_used_today = 0;
+    profile.images_used_today = 0;
+    profile.last_reset_date = today;
+    await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${user.id}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json', Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({ messages_used_today: 0, images_used_today: 0, last_reset_date: today })
     });
   }
 
-  function renderMessages() {
-    messagesEl.innerHTML = '';
-    if (history.length === 0) {
-      addMessageToDOM('assistant', WELCOME);
-    } else {
-      history.forEach(m => {
-        const isImg = m.role === 'assistant' && typeof m.content === 'string' && m.content.startsWith('https://image.pollinations.ai/');
-        addMessageToDOM(m.role, m.content, isImg);
-      });
-    }
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+  const LIMITS = {
+    free: { messages: 25, images: 7 },
+    premium: { messages: 150, images: 20 },
+    vip: { messages: 1000, images: 100 },
+    admin: { messages: 999999, images: 999999 }
+  };
+  const limits = LIMITS[profile.plan] || LIMITS.free;
+
+  const SYSTEM_PROMPT = isEnglish
+    ? "Your name is Hamrohim. You were created by Bilolxon. If someone asks who created you or who you are, only say: \"I was created by Bilolxon.\" Never mention any company (OpenAI, Google, Meta, etc). You are a friendly, warm AI companion. Respond in English. Keep answers concise, natural, and friendly, but helpful and clear."
+    : "Sening isming Hamrohim. Seni Bilolxon yaratgan. Agar kim seni yaratgani yoki kim ekaning haqida so'ralsa, faqat shuni ayt: \"Meni Bilolxon yaratgan.\" Boshqa hech qanday kompaniya (OpenAI, Google, Meta va h.k.) nomini aslo aytma va tilga olma. Sen o'zbek tilida gaplashadigan, do'stona, iliq va samimiy AI yordamchisan. Javoblaring qisqa, tabiiy va do'stona bo'lsin, lekin foydali va aniq bo'lishi kerak.";
+
+  async function incrementUsage(field) {
+    await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${user.id}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json', Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({ [field]: profile[field] + 1 })
+    });
   }
 
-  function addMessageToDOM(role, text, isImage = false) {
-    const div = document.createElement('div');
-    div.className = 'msg ' + role;
-    if (isImage) {
-      const img = document.createElement('img');
-      img.src = text;
-      img.style.maxWidth = '100%';
-      img.style.borderRadius = '12px';
-      img.style.display = 'block';
-      div.appendChild(img);
-    } else {
-      div.textContent = text;
-    }
-    messagesEl.appendChild(div);
-    return div;
-  }
-
-  function startNewChat() {
-    currentChatId = 'chat_' + Date.now();
-    history = [];
-    renderMessages();
-    renderHistory();
-    closeSidebar();
-  }
-
-  function loadChat(id) {
-    const chat = allChats.find(c => c.id === id);
-    if (!chat) return;
-    currentChatId = id;
-    history = chat.messages;
-    renderMessages();
-    renderHistory();
-  }
-
-  function persistCurrentChat(firstUserText) {
-    let chat = allChats.find(c => c.id === currentChatId);
-    if (!chat) {
-      chat = { id: currentChatId, title: firstUserText.slice(0, 30), messages: history };
-      allChats.push(chat);
-    } else {
-      chat.messages = history;
-    }
-    saveChats();
-    renderHistory();
-  }
-
-  async function sendMessage() {
-    const text = inputEl.value.trim();
-    if (!text) return;
-    if (!currentSession) return;
-    inputEl.value = '';
-
-    const isFirstMessage = history.length === 0;
-    if (isFirstMessage) messagesEl.innerHTML = '';
-
-    addMessageToDOM('user', text);
-    history.push({ role: 'user', content: text });
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-    sendBtn.disabled = true;
-    const loadingEl = addMessageToDOM('assistant', 'Hamrohim yozmoqda...');
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-
+  try {
+    const intentRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          {
+            role: 'system',
+            content: "You are an intent classifier. Given the recent conversation, decide if the LAST user message is asking to create, draw, generate, or modify an IMAGE/PICTURE (in any language, even if phrased as a follow-up like 'add a person behind it' without explicitly saying 'image'). Reply with ONLY valid JSON, nothing else, in this exact format: {\"isImage\": true or false, \"prompt\": \"a detailed, complete English description of the full image, including EVERY single detail, object, action, and modifier mentioned by the user across the whole conversation — do not omit or summarize away any detail, even small ones like objects held in hands, background elements, or accessories\"}. If isImage is false, prompt can be empty string."
+          },
+          ...messages.slice(-6)
+        ]
+      })
+    });
+    const intentData = await intentRes.json();
+    let intent = { isImage: false, prompt: '' };
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentSession.access_token}`
-        },
-        body: JSON.stringify({ messages: history })
-      });
-      const data = await res.json();
-
-      if (data.type === 'auth_required') {
-        loadingEl.remove();
-        authModal.classList.remove('hidden');
-        return;
-      }
-
-      if (data.type === 'limit') {
-        loadingEl.textContent = data.reply;
-        tariffModal.classList.add('show');
-      } else if (data.type === 'image') {
-        loadingEl.remove();
-        addMessageToDOM('assistant', data.reply, true);
-        history.push({ role: 'assistant', content: data.reply });
-      } else {
-        loadingEl.textContent = data.reply || "Kechirasan, javob bera olmadim.";
-        history.push({ role: 'assistant', content: data.reply || '' });
-      }
-      persistCurrentChat(text);
-      await loadProfile();
+      const raw = intentData.choices?.[0]?.message?.content?.trim() || '{}';
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      intent = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
     } catch (e) {
-      loadingEl.textContent = "Xatolik yuz berdi. Qayta urin.";
-    } finally {
-      sendBtn.disabled = false;
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+      console.error('Intent parse error:', e, intentData);
     }
+
+    if (intent.isImage && intent.prompt) {
+      if (profile.images_used_today >= limits.images) {
+        return res.status(200).json({
+          type: 'limit', limitType: 'image',
+          reply: isEnglish ? "Your daily image limit is over." : "Bugungi rasm yaratish limitingiz tugadi."
+        });
+      }
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(intent.prompt)}?width=768&height=768&nologo=true`;
+      await incrementUsage('images_used_today');
+      return res.status(200).json({ reply: imageUrl, type: 'image' });
+    }
+
+    if (profile.messages_used_today >= limits.messages) {
+      return res.status(200).json({
+        type: 'limit', limitType: 'message',
+        reply: isEnglish ? "Your daily message limit is over." : "Bugungi xabar limitingiz tugadi."
+      });
+    }
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [ { role: 'system', content: SYSTEM_PROMPT }, ...messages ]
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('Groq API error:', data);
+      return res.status(500).json({ error: data.error?.message || 'Groq API error' });
+    }
+
+    const reply = data.choices?.[0]?.message?.content || (isEnglish ? "Sorry, no reply." : "Kechirasan, javob topilmadi.");
+    await incrementUsage('messages_used_today');
+    res.status(200).json({ reply, type: 'text' });
+  } catch (err) {
+    console.error('Server error:', err);
+    res.status(500).json({ error: 'Server error: ' + err.message });
   }
-
-  sendBtn.addEventListener('click', sendMessage);
-  inputEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-  menuBtn.addEventListener('click', toggleSidebar);
-  overlay.addEventListener('click', closeSidebar);
-  newChatBtn.addEventListener('click', startNewChat);
-
-  if (window.innerWidth > 640) sidebar.classList.remove('hidden');
-  initAuth();
-</script>
-</body>
-</html>
+}
