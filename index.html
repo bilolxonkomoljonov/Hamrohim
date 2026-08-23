@@ -93,7 +93,14 @@
     align-self: flex-start; background: rgba(242,237,228,0.08);
     border: 1px solid rgba(242,237,228,0.1); border-radius: 18px 18px 18px 4px;
   }
+  #imagePreviewBar { padding: 0 16px 10px; display: none; align-items: center; gap: 8px; }
+  #imagePreviewBar img { height: 56px; border-radius: 10px; }
+  #imagePreviewBar .removeImg { cursor: pointer; color: #ff8080; font-size: 13px; }
   #inputbar { padding: 16px; border-top: 1px solid rgba(242,237,228,0.12); display: flex; gap: 10px; }
+  #attachBtn {
+    background: rgba(242,237,228,0.08); border: 1px solid rgba(242,237,228,0.18);
+    color: #f2ede4; border-radius: 12px; width: 44px; font-size: 22px; cursor: pointer; flex-shrink: 0;
+  }
   textarea {
     flex: 1; resize: none; background: rgba(242,237,228,0.06);
     border: 1px solid rgba(242,237,228,0.18); border-radius: 14px;
@@ -239,7 +246,10 @@
       </div>
     </header>
     <div id="messages"></div>
+    <div id="imagePreviewBar"></div>
     <div id="inputbar">
+      <button id="attachBtn" type="button">+</button>
+      <input type="file" id="fileInput" accept="image/*" style="display:none" />
       <textarea id="input" rows="1" placeholder="Xabar yoz..."></textarea>
       <button class="send" id="sendBtn">Yubor</button>
     </div>
@@ -271,7 +281,7 @@
       payAlert: "So'rovingiz yuborildi! Tez orada tasdiqlanadi.", payErr: "Xatolik yuz berdi, qayta urinib ko'ring.",
       planNames: { free: '🆓 Bepul', premium: '💎 Premium', vip: '👑 VIP', admin: '⚡ Admin' },
       usageLabel: (m, ml, i, il) => `Xabar: ${m}/${ml} · Rasm: ${i}/${il}`,
-      newChatTitle: 'Yangi suhbat'
+      newChatTitle: 'Yangi suhbat', removeImg: '✕ olib tashlash'
     },
     en: {
       subtitle: 'always by your side', placeholder: 'Type a message...', send: 'Send',
@@ -292,7 +302,7 @@
       payAlert: 'Your request has been sent! It will be confirmed soon.', payErr: 'Something went wrong, please try again.',
       planNames: { free: '🆓 Free', premium: '💎 Premium', vip: '👑 VIP', admin: '⚡ Admin' },
       usageLabel: (m, ml, i, il) => `Messages: ${m}/${ml} · Images: ${i}/${il}`,
-      newChatTitle: 'New chat'
+      newChatTitle: 'New chat', removeImg: '✕ remove'
     }
   };
 
@@ -494,6 +504,35 @@
   const newChatBtn = document.getElementById('newChatBtn');
   const historyList = document.getElementById('historyList');
   const overlay = document.getElementById('overlay');
+  const attachBtn = document.getElementById('attachBtn');
+  const fileInput = document.getElementById('fileInput');
+  const imagePreviewBar = document.getElementById('imagePreviewBar');
+  let pendingImage = null;
+
+  attachBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingImage = reader.result;
+      imagePreviewBar.style.display = 'flex';
+      imagePreviewBar.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = pendingImage;
+      const rm = document.createElement('span');
+      rm.className = 'removeImg';
+      rm.textContent = TEXTS[currentLang].removeImg;
+      rm.addEventListener('click', () => {
+        pendingImage = null;
+        imagePreviewBar.style.display = 'none';
+        fileInput.value = '';
+      });
+      imagePreviewBar.appendChild(img);
+      imagePreviewBar.appendChild(rm);
+    };
+    reader.readAsDataURL(file);
+  });
 
   let allChats = [];
   let currentChatId = null;
@@ -563,6 +602,9 @@
   function startNewChat() {
     currentChatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     history = [];
+    pendingImage = null;
+    imagePreviewBar.style.display = 'none';
+    fileInput.value = '';
     renderMessages(); renderHistory(); closeSidebar();
   }
 
@@ -594,24 +636,37 @@
 
   async function sendMessage() {
     const text = inputEl.value.trim();
-    if (!text || !currentSession) return;
+    if ((!text && !pendingImage) || !currentSession) return;
     inputEl.value = '';
 
     const isFirstMessage = history.length === 0;
     if (isFirstMessage) messagesEl.innerHTML = '';
 
-    addMessageToDOM('user', text);
-    history.push({ role: 'user', content: text });
+    const displayText = text || (currentLang === 'uz' ? '[rasm yuborildi]' : '[image sent]');
+    if (pendingImage) {
+      const div = document.createElement('div');
+      div.className = 'msg user';
+      const img = document.createElement('img');
+      img.src = pendingImage; img.style.maxWidth = '100%'; img.style.borderRadius = '12px'; img.style.display = 'block'; img.style.marginBottom = text ? '8px' : '0';
+      div.appendChild(img);
+      if (text) { const p = document.createElement('div'); p.textContent = text; div.appendChild(p); }
+      messagesEl.appendChild(div);
+    } else {
+      addMessageToDOM('user', text);
+    }
+    history.push({ role: 'user', content: text || (currentLang === 'uz' ? 'Bu rasmda nima bor?' : 'What is in this image?') });
     messagesEl.scrollTop = messagesEl.scrollHeight;
     sendBtn.disabled = true;
     const loadingEl = addMessageToDOM('assistant', TEXTS[currentLang].typing);
     messagesEl.scrollTop = messagesEl.scrollHeight;
 
+    const imageToSend = pendingImage;
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentSession.access_token}` },
-        body: JSON.stringify({ messages: history, lang: currentLang })
+        body: JSON.stringify({ messages: history, lang: currentLang, image: imageToSend })
       });
       const data = await res.json();
 
@@ -631,11 +686,14 @@
         loadingEl.textContent = data.reply || TEXTS[currentLang].errReply;
         history.push({ role: 'assistant', content: data.reply || '' });
       }
-      await persistCurrentChat(text);
+      await persistCurrentChat(text || displayText);
       await loadProfile();
     } catch (e) {
       loadingEl.textContent = TEXTS[currentLang].errGeneric;
     } finally {
+      pendingImage = null;
+      imagePreviewBar.style.display = 'none';
+      fileInput.value = '';
       sendBtn.disabled = false;
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
