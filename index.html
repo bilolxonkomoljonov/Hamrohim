@@ -359,7 +359,7 @@
 
   let currentSession = null;
   let userProfile = null;
-  let isSignUpMode = false;
+  let isSignUpMode = true;
 
   const authModal = document.getElementById('authModal');
   const authEmail = document.getElementById('authEmail');
@@ -493,6 +493,7 @@
       await afterLogin();
     } else {
       authModal.classList.remove('hidden');
+      applyLanguage();
     }
   }
 
